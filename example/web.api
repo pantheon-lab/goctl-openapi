@@ -1,0 +1,2084 @@
+/////////////
+// General //
+/////////////
+@server (
+	prefix: /v1
+	group:  general
+)
+service web-api {
+	@handler PingHandler
+	get /health
+}
+
+// Render
+type RenderRequest {
+	Id              string `json:"id"`
+	CreatedAt       int64  `json:"created_at"`
+	UpdatedAt       int64  `json:"updated_at"`
+	RefId           string `json:"ref_id"`
+	SessionId       string `json:"session_id,optional"`
+	MessageId       string `json:"message_id,optional"`
+	DisplayText     string `json:"display_text,optional"`
+	DisplayTextHash string `json:"display_text_hash,optional"`
+	VoiceText       string `json:"voice_text,optional"`
+	VoiceTextHash   string `json:"voice_text_hash,optional"`
+	ProfileId       string `json:"profile_id"`
+	AudioPath       string `json:"audio_path,optional"`
+	AudioUrl        string `json:"audio_url,optional"`
+	AudioStartAt    int64  `json:"audio_start_at,optional"`
+	AudioFinishAt   int64  `json:"audio_finish_at,optional"`
+	AudioStatus     string `json:"audio_status"`
+	VideoPath       string `json:"video_path,optional"`
+	VideoUrl        string `json:"video_url,optional"`
+	VideoStartAt    int64  `json:"video_start_at,optional"`
+	VideoFinishAt   int64  `json:"video_finish_at,optional"`
+	VideoStatus     string `json:"video_status"`
+	RequestStartAt  int64  `json:"request_start_at,optional"`
+	RequestFinishAt int64  `json:"request_finish_at,optional"`
+	RequestStatus   string `json:"request_status"`
+	Message         string `json:"message,optional"`
+}
+
+type NewRenderRequest {
+	RefId           string `json:"ref_id,optional"`
+	ProfileId       string `json:"profile_id,optional"`
+	Token           string `json:"token,optional"`
+	TextContent     string `json:"text_content"`
+	LanguageCode    string `json:"language_code"`
+	SkipAudioRender bool   `json:"skipAudioRender,default=false"`
+	SkipVideoRender bool   `json:"skipVideoRender,default=false"`
+	Gesture         string `json:"gesture,optional"`
+}
+
+type NewFlexibleRequest {
+	VoiceId               string  `json:"voice_id"`
+	VoiceSpeed            string  `json:"voice_speed,optional"`
+	VoicePitch            string  `json:"voice_pitch,optional"`
+	ModelId               string  `json:"model_id"`
+	ModelGestureStartTime float32 `json:"model_gesture_start_time,optional"`
+	Token                 string  `json:"token,optional"`
+	ProfileId             string  `json:"profile_id,optional"`
+	TextContent           string  `json:"text_content"`
+	VoiceLanguageCode     string  `json:"voice_language_code"`
+	Gesture               string  `json:"gesture,optional"`
+	Provider              string  `json:"provider"`
+}
+
+type GetStationAvatarReq {
+	StationName string `json:"stationName"`
+	Lang        string `json:"lang"`
+}
+
+type GetStationAvatarResp {
+	Token     string `json:"token"`
+	ModelKey  string `json:"model_key"`
+	ProfileId string `json:"profile_id"`
+}
+
+type AvatarAction {
+	ModelId string   `json:"model_id"`
+	Actions []string `json:"actions"`
+}
+
+type AvatarActions {
+	Data []AvatarAction `json:"data"`
+}
+
+type DialogFlowReq {
+	SessionInfo  SessionInfo `json:"sessionInfo"`
+	LanguageCode string      `json:"languageCode"`
+}
+
+type SessionInfo {
+	Session    string                 `json:"session"`
+	Parameters map[string]interface{} `json:"parameters"`
+}
+
+type FulfillmentMessage {
+	Payload map[string]interface{} `json:"payload"`
+}
+
+type FulfillmentResponse {
+	Messages []FulfillmentMessage `json:"message,omitempty"`
+}
+
+type DialogFlowSignalParms {
+	Signal string `json:"signal"`
+}
+
+type DialogFlowRespPayloadMedia {
+	Type   string                `json:"type"`
+	Url    string                `json:"url,omitempty"`
+	Params DialogFlowSignalParms `json:"params,omitempty"`
+}
+
+type DialogFlowRespPayload {
+	Media   []DialogFlowRespPayloadMedia `json:"media"`
+	Details map[string]interface{}       `json:"details"`
+}
+
+type DialogFlowResp {
+	FulfillmentResponse FulfillmentResponse   `json:"fulfillmentResponse"`
+	SessionInfo         SessionInfo           `json:"sessionInfo"`
+	Payload             DialogFlowRespPayload `json:"payload"`
+}
+
+@server (
+	prefix: /v1/render
+	group:  render
+)
+service web-api {
+	// @handler GetRequestsHandler
+	// get /requests returns ([]RenderRequest)
+	@handler NewRequestHandler
+	post /new_request (NewRenderRequest) returns (RenderRequest)
+
+	@handler GetStationAvatarHandler
+	post /get_station_avatar (GetStationAvatarReq) returns (GetStationAvatarResp)
+
+	@handler UpsertAvatarActions
+	post /upsert_avatar_actions (AvatarActions) returns (AvatarActions)
+
+	@handler NewFlexibleRequestHandler
+	post /new_flexible_request (NewFlexibleRequest) returns (RenderRequest)
+}
+
+@server (
+	prefix:  /v1/render
+	group:   render
+	timeout: 0
+)
+service web-api {
+	@handler NewRequestStreamHandler
+	post /new_request/stream (NewRenderRequest)
+
+	@handler NewFlexibleRequestStreamHandler
+	post /new_flexible_request/stream (NewFlexibleRequest)
+}
+
+// Profile
+type (
+	Config {
+		Id           string                 `json:"id"`
+		CreatedAt    int64                  `json:"created_at"`
+		UpdatedAt    int64                  `json:"updated_at"`
+		LanguageCode string                 `json:"language_code"`
+		Name         string                 `json:"name"`
+		Details      map[string]interface{} `json:"details"`
+		Enabled      bool                   `json:"enabled"`
+	}
+	Channel {
+		Id             string                 `json:"id"`
+		CreatedAt      int64                  `json:"created_at"`
+		UpdatedAt      int64                  `json:"updated_at"`
+		LanguageCode   string                 `json:"language_code"`
+		LanguageConfig Config                 `json:"language_config"`
+		BotConfig      Config                 `json:"bot_config"`
+		VoiceConfig    Config                 `json:"voice_config"`
+		ModelConfig    Config                 `json:"model_config"`
+		GeneralConfig  Config                 `json:"general_config"`
+		Name           string                 `json:"name"`
+		Details        map[string]interface{} `json:"details"`
+		IsDefault      bool                   `json:"is_default"`
+		Enabled        bool                   `json:"enabled"`
+	}
+	GetChannelReq {
+		ProfileId    string `json:"profile_id,optional"`
+		ChannelId    string `json:"channel_id,optional"`
+		LanguageCode string `json:"language_code,optional"`
+	}
+	ModelAction {
+		ModelId string   `json:"model_id"`
+		Actions []string `json:"actions"`
+		Gender  *string  `json:"gender,optional"`
+	}
+	ListModelActionsReq {
+		UseEmbedded bool `form:"use_embedded,default=false"`
+	}
+	ListModelActionsResp {
+		Nodes []ModelAction `json:"data"`
+	}
+)
+
+@server (
+	prefix: /v1/profile
+	group:  profile
+	jwt:    Auth // Enable JWT authentication
+)
+service web-api {
+	@handler GetChannelHandler
+	post /get_channel (GetChannelReq) returns (Channel)
+
+	@handler ListModelActionsHandler
+	get /list_model_actions (ListModelActionsReq) returns (ListModelActionsResp)
+}
+
+// User
+type UserCredit {
+	Used  int32 `json:"used"`
+	Total int32 `json:"total"`
+}
+
+type (
+	UserDataReq {
+		Token string `header:"Authorization"`
+	}
+	UserProfile {
+		ProfileId  string                 `json:"profile_id"`
+		Name       string                 `json:"name"` // from profile table
+		Details    map[string]interface{} `json:"details"` // from profile table
+		Permission string                 `json:"permission"`
+		IsActive   bool                   `json:"is_active"`
+	}
+	UserData {
+		Id         string        `json:"id"`
+		Email      string        `json:"email"`
+		Name       string        `json:"name"`
+		Locale     string        `json:"locale"`
+		IsActive   bool          `json:"is_active"`
+		IsVerified bool          `json:"is_verified"`
+		Profiles   []UserProfile `json:"profiles"`
+	}
+)
+
+@server (
+	prefix: /v1/user
+	group:  user
+	jwt:    Auth // Enable JWT authentication
+)
+service web-api {
+	@handler GetUserDataHandler
+	get /data (UserDataReq) returns (UserData)
+}
+
+// @server(
+//  prefix: /v1
+//  group: user
+// )
+// service web-api {
+//  @handler GetUserCreditHandler
+//  get /user/credit returns (UserCredit)
+// }
+//////////////////////////
+// User (OAuth related) //
+//////////////////////////
+type (
+	RefreshTokenReq {
+		RefreshToken string `json:"refreshToken"`
+	}
+	RefreshTokenResp {
+		Token string `json:"token"`
+	}
+	SignInDto {
+		Email        string `json:"email"`
+		Password     string `json:"password" mask:"hash"`
+		ProfileId    string `json:"profileId,optional"`
+		OriginHeader string `header:"Origin,optional"`
+		SubPath      string `json:"subpath,optional"`
+	}
+	OrgRoleStatus {
+		Role   string `json:"role"`
+		Status string `json:"status"`
+		Name   string `json:"orgName"`
+		Id     string `json:"orgId"`
+	}
+	SignInRes {
+		Url          string          `json:"url"`
+		Token        string          `json:"token"`
+		RefreshToken string          `json:"refreshToken"`
+		Id           string          `json:"id"`
+		Email        string          `json:"email"`
+		Name         string          `json:"name"`
+		Role         string          `json:"role"`
+		OrgRole      []OrgRoleStatus `json:"orgRole"`
+		IsActive     bool            `json:"isActive"`
+		IsVerified   bool            `json:"isVerified"`
+	}
+	SignUpDto {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Name     string `json:"name"`
+	}
+	SignUpRes {
+		Id    string `json:"id"`
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+	AuthorizedReq {
+		Code  string `form:"code"`
+		State string `form:"state"`
+	}
+	OauthShopifyReq {
+		Shop string `form:"shop"`
+	}
+	ShopifyAuthorizedReq {
+		Code string `form:"code"`
+		Hmac string `form:"hmac"`
+		Shop string `form:"shop"`
+	}
+	OauthRequest {
+		Redirect string `form:"redirect,optional"`
+	}
+)
+
+@server (
+	prefix: /v1/oauth
+	group:  auth
+)
+service web-api {
+	@handler OauthGoogleRequestHandler
+	get /google (OauthRequest)
+
+	@handler OauthGoogleAuthorizedRequestHandler
+	get /google/authorized (AuthorizedReq)
+
+	@handler OauthGoogleFailRequestHandler
+	get /google/fail
+
+	@handler OauthGithubRequestHandler
+	get /github (OauthRequest)
+
+	@handler OauthGithubAuthorizedRequestHandler
+	get /github/authorized (AuthorizedReq)
+
+	@handler OauthGithubFailRequestHandler
+	get /github/fail
+
+	@handler OauthShopifyRequestHandler
+	get /shopify (OauthShopifyReq)
+
+	@handler OauthShopifyAuthorizedRequestHandler
+	get /shopify/authorized (ShopifyAuthorizedReq)
+
+	@handler SignUpRequestHandler
+	post /signup (SignUpDto) returns (SignUpRes)
+
+	@handler SignInRequestHandler
+	post /signin (SignInDto) returns (SignInRes)
+
+	@handler RefreshTokenRequestHandler
+	post /refresh_token (RefreshTokenReq) returns (RefreshTokenResp)
+}
+
+/////////////////
+// File upload //
+/////////////////
+type (
+	UploadReq {
+		File string `form:"file,optional"`
+		Path string `form:"path,optional"`
+	}
+	UploadResp {
+		Msg     string `json:"msg"`
+		Url     string `json:"url"`
+		FullUrl string `json:"full_url"`
+	}
+)
+
+@server (
+	prefix: /v1/upload
+	group:  upload
+)
+service web-api {
+	@handler UploadHandler
+	post / (UploadReq) returns (UploadResp)
+
+	@handler UploadChatAgentMediaHandler
+	post /media (UploadReq) returns (UploadResp)
+}
+
+///////////////////////
+// Webhook - Setsail //
+///////////////////////
+type (
+	IDDto {
+		Id string `json:"id"`
+	}
+	QuickReplyDto {
+		ContentType string `json:"content_type"`
+		Title       string `json:"title"`
+		Payload     string `json:"payload"`
+	}
+	ButtonDto {
+		Title   string `json:"title,optional"`
+		Type    string `json:"type"`
+		Payload string `json:"payload,optional"`
+		Url     string `json:"url,optional"`
+	}
+	PayloadDto {
+		TemplateType string      `json:"template_type"`
+		Text         string      `json:"text"`
+		Buttons      []ButtonDto `json:"buttons"`
+	}
+	AttachmentDto {
+		Type    string     `json:"type"`
+		Payload PayloadDto `json:"payload"`
+	}
+	PoiDto {
+		ID                    int    `json:"ID,optional"`
+		Type                  string `json:"type,optional"`
+		Name                  string `json:"name,optional"`
+		OriginName            string `json:"originName,optional"`
+		OriginStationID       int    `json:"originStationID,optional"`
+		StationName           string `json:"stationName,optional"`
+		StationID             int    `json:"stationID,optional"`
+		StationExit           string `json:"stationExit,optional"`
+		StationExitCoordinate string `json:"stationExitCoordinate,optional"`
+		Coordinate            string `json:"coordinate,optional"`
+		Address               string `json:"address,optional"`
+		IsSignage             bool   `json:"isSignage,optional"`
+	}
+	HRRouteMessageDto {
+		Msg       string `json:"msg,optional"`
+		Banner    int    `json:"banner,optional"`
+		BgColor   string `json:"bgColor,optional"`
+		URL       string `json:"url,optional"`
+		Urlm      string `json:"urlm,optional"`
+		FontSize  int    `json:"fontSize,optional"`
+		FontColor string `json:"fontColor,optional"`
+		MsgText   string `json:"msgText,optional"`
+	}
+	HRRouteMessageFareClassDto {
+		OctopusAdult             string `json:"octopusAdult,optional"`
+		OctopusConcession        string `json:"octopusConcession,optional"`
+		OctopusConcessionChild   string `json:"octopusConcessionChild,optional"`
+		OctopusConcessionElderly string `json:"octopusConcessionElderly,optional"`
+		OctopusJoyYouSixty       string `json:"octopusJoyYouSixty,optional"`
+		OctopusConcessionPwd     string `json:"octopusConcessionPwd,optional"`
+		OctopusStudent           string `json:"octopusStudent,optional"`
+		SjAdult                  string `json:"sjAdult,optional"`
+		SjConcession             string `json:"sjConcession,optional"`
+		SjConcessionChild        string `json:"sjConcessionChild,optional"`
+		SjConcessionElderly      string `json:"sjConcessionElderly,optional"`
+		SjConcessionPwd          string `json:"sjConcessionPwd,optional"`
+		SjStudent                string `json:"sjStudent,optional"`
+	}
+	HRRouteMessageFareDto {
+		AEL           HRRouteMessageFareClassDto `json:"AEL,optional"`
+		StandardClass HRRouteMessageFareClassDto `json:"standardClass,optional"`
+		FirstClass    HRRouteMessageFareClassDto `json:"firstClass,optional"`
+	}
+	HRRoutePathDto {
+		ID            int    `json:"ID,optional"`
+		StationStatus int    `json:"stationStatus,optional"`
+		LinkStatus    int    `json:"linkStatus,optional"`
+		LineID        int    `json:"lineID,optional"`
+		DummyLine     int    `json:"DummyLine,optional"`
+		Track         int    `json:"Track,optional"`
+		LinkType      string `json:"linkType,optional"`
+		Time          string `json:"time,optional"`
+		Platform      string `json:"platform,optional"`
+		Towards       string `json:"towards,optional"`
+		LinkText      string `json:"linkText,optional"`
+	}
+	PromotionDto {
+		Title    string `json:"title,optional"`
+		Link     string `json:"link,optional"`
+		Discount string `json:"discount,optional"`
+	}
+	HRRouteDto {
+		Time                  float32               `json:"time,optional"`
+		RouteStatus           []string              `json:"routeStatus,optional"`
+		Special               int                   `json:"special,optional"`
+		Feature               []string              `json:"feature,optional"`
+		Rules                 string                `json:"rules,optional"`
+		RouteName             string                `json:"routeName,optional"`
+		InterchangeStationsNo int                   `json:"interchangeStationsNo,optional"`
+		WalkingTime           float32               `json:"walkingTime,optional"`
+		RouteRemark           string                `json:"routeRemark,optional"`
+		Promotions            []PromotionDto        `json:"promotions,optional"`
+		Messages              []HRRouteMessageDto   `json:"messages,optional"`
+		Fares                 HRRouteMessageFareDto `json:"fares,optional"`
+		Path                  []HRRoutePathDto      `json:"path,optional"`
+	}
+	LRRoutePathStepDto {
+		LineID             string `json:"lineID,optional"`
+		Towards            string `json:"towards,optional"`
+		Platform           string `json:"platform,optional"`
+		LinkText           string `json:"linkText,optional"`
+		TowardsStationName string `json:"towardsStationName,optional"`
+		Track              string `json:"track,optional"`
+	}
+	LRRoutePathDto {
+		ID       string               `json:"ID,optional"`
+		LinkType string               `json:"linkType,optional"`
+		Time     string               `json:"time,optional"`
+		Step     []LRRoutePathStepDto `json:"step,optional"`
+	}
+	LRRouteDto {
+		Time                  string           `json:"time,optional"`
+		RouteName             string           `json:"routeName,optional"`
+		InterchangeStationsNo int              `json:"interchangeStationsNo,optional"`
+		Path                  []LRRoutePathDto `json:"path,optional"`
+	}
+	CompleteRoutePathDto {
+		Label      string `json:"label,optional"`
+		Coordinate string `json:"coordinate,optional"`
+		StopType   string `json:"stopType,optional"`
+		RouteType  string `json:"routeType,optional"`
+		RouteText  string `json:"routeText,optional"`
+		SRouteText string `json:"sRouteText,optional"`
+		Exit       string `json:"exit,optional"`
+		Time       string `json:"time,optional"`
+		URL        string `json:"url,optional"`
+	}
+	CompleteRouteDto {
+		Time        string                 `json:"time,optional"`
+		WalkingTime string                 `json:"walkingTime,optional"`
+		Fare        string                 `json:"fare,optional"`
+		RouteRemark string                 `json:"routeRemark,optional"`
+		Info        string                 `json:"info,optional"`
+		Promotions  []string               `json:"promotions,optional"`
+		Path        []CompleteRoutePathDto `json:"path,optional"`
+	}
+	RouteDto {
+		Poi           PoiDto           `json:"Poi,optional"`
+		HRRoute       HRRouteDto       `json:"HRRoute,optional"`
+		LRRoute       LRRouteDto       `json:"LRRoute,optional"`
+		CompleteRoute CompleteRouteDto `json:"CompleteRoute,optional"`
+	}
+	CarouselLocationUnitNameDto {
+		Language        string `json:"language,optional"`
+		Name            string `json:"name,optional"`
+		ExitDescription string `json:"exitDescription,optional"`
+	}
+	CarouselLocationUnitDto {
+		ID    string                        `json:"id,optional"`
+		Names []CarouselLocationUnitNameDto `json:"names,optional"`
+		Poiid string                        `json:"poiid,optional"`
+	}
+	CarouselLocationDto {
+		Name string                  `json:"name,optional"`
+		Unit CarouselLocationUnitDto `json:"unit,optional"`
+	}
+	CarouselDetailDto {
+		Lang     string   `json:"lang,optional"`
+		ShopName string   `json:"shopName,optional"`
+		Contact  string   `json:"contact,optional"`
+		Tags     []string `json:"tags,optional"`
+		Keywords string   `json:"keywords,optional"`
+	}
+	CarouselDto {
+		Id        string                `json:"id,optional"`
+		DocId     string                `json:"docId,optional"`
+		Type      string                `json:"type,optional"`
+		Logo      string                `json:"logo,optional"`
+		Image     string                `json:"image,optional"`
+		Locations []CarouselLocationDto `json:"locations,optional"`
+		Details   []CarouselDetailDto   `json:"details,optional"`
+	}
+	MessagePayloadDto {
+		IntentSurveyText         string          `json:"intent_survey_text,optional"`
+		IntentSurveyQuickReplies []QuickReplyDto `json:"intent_survey_quick_replies,optional"`
+	}
+	MessageDto {
+		Text              string            `json:"text,optional"`
+		Gesture           string            `json:"gesture,optional"`
+		Type              string            `json:"type,optional"`
+		Html              string            `json:"html,optional"`
+		CallCenter        string            `json:"callCenter,optional"`
+		Image             string            `json:"image,optional"`
+		Query             string            `json:"query,optional"`
+		AgentBackgroundZh string            `json:"agent_background_zh,optional"`
+		AgentBackfroundEn string            `json:"agent_background_en,optional"`
+		FallbackMessage   string            `json:"fallback_message,optional"`
+		ProjectId         string            `json:"project_id,optional"`
+		ButtonConfirmText string            `json:"button_confirm_text,optional"`
+		ButtonCancelText  string            `json:"button_cancel_text,optional"`
+		SkipLipSync       bool              `json:"skipLipSync,optional"`
+		Carousel          []CarouselDto     `json:"carousel,optional"`
+		Route             RouteDto          `json:"route,optional"`
+		QuickReplies      []QuickReplyDto   `json:"quick_replies,optional"`
+		Attachment        AttachmentDto     `json:"attachment,optional"`
+		Action            string            `json:"action,optional"`
+		Payload           MessagePayloadDto `json:"payload,optional"`
+	}
+	DetailsDto {
+		OutgoingMid    string `json:"outgoing_mid"`
+		Lang           string `json:"lang"`
+		Intent         string `json:"intent,optional"`
+		ConfidenceTier string `json:"confidence_tier,optional"`
+	}
+	SetsailChatResponseDto {
+		Timestamp int64      `json:"timestamp"`
+		ChatbotId string     `json:"chatbot_id"`
+		Recipient IDDto      `json:"recipient"`
+		Sender    IDDto      `json:"sender"`
+		Message   MessageDto `json:"message"`
+		Details   DetailsDto `json:"details"`
+	}
+	SetsailUpdateStationProfileReq {
+		Token       string `json:"token"`
+		StationName string `json:"stationName"`
+		Lang        string `json:"lang"`
+	}
+	SetsailUpdateStationProfileResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+)
+
+@server (
+	prefix: /v1/webhook
+	group:  webhook
+)
+service web-api {
+	@handler SetsailChatResponseHandler
+	post /setsail (SetsailChatResponseDto)
+
+	@handler SetsailUpdateStationProfileHandler
+	post /setsail/update (SetsailUpdateStationProfileReq) returns (SetsailUpdateStationProfileResp)
+}
+
+type (
+	Catalog {
+		Id             string                 `json:"id"`
+		CreatedAt      int64                  `json:"created_at"`
+		UpdatedAt      int64                  `json:"updated_at"`
+		Title          string                 `json:"title"`
+		FileBucket     string                 `json:"file_bucket"`
+		FilePath       string                 `json:"file_path"`
+		Paragraph      string                 `json:"paragraph"`
+		Trigger        string                 `json:"trigger"`
+		Priority       int32                  `json:"priority"`
+		IsPublished    bool                   `json:"is_published"`
+		PublishedAt    int64                  `json:"published_at"`
+		OrganizationId string                 `json:"organization_id"`
+		Tag            string                 `json:"tag"`
+		TagColor       string                 `json:"tag_color"`
+		Details        map[string]interface{} `json:"details"`
+		CardTitle      string                 `json:"card_title"`
+		Type           string                 `json:"type"`
+		FileUrl        string                 `json:"file_url"`
+		PromotionUrl   string                 `json:"promotion_url"`
+	}
+	GetGetCatalogListReq {
+		Page  int32 `form:"page"`
+		Limit int32 `form:"limit"`
+	}
+	GetCatalogListReq {
+		Page  int32 `json:"page"`
+		Limit int32 `json:"limit"`
+	}
+	GetCatalogListResp {
+		Nodes []Catalog `json:"nodes"`
+	}
+	CatalogClickTransaction {
+		Id           string `json:"id"`
+		CreatedAt    int64  `json:"created_at"`
+		UpdatedAt    int64  `json:"updated_at"`
+		CatalogId    string `json:"catalog_id"`
+		LanguageCode string `json:"language_code"`
+		UserAgent    string `json:"user_agent"`
+	}
+	NewCatalogClickTransactionReq {
+		CatalogId    string `json:"catalog_id"`
+		LanguageCode string `json:"language_code"`
+	}
+)
+
+@server (
+	prefix:     /v1/catalog
+	group:      catalog
+	middleware: APIKeyAuthHeaderMiddleware,CacheMiddleware
+)
+service web-api {
+	@handler GetGetCatalogListHandler
+	get /active (GetGetCatalogListReq) returns (GetCatalogListResp)
+
+	@handler GetCatalogListHandler
+	post /active (GetCatalogListReq) returns (GetCatalogListResp)
+
+	@handler NewCatalogClickTransactionHandler
+	post /click (NewCatalogClickTransactionReq) returns (CatalogClickTransaction)
+}
+
+type (
+	ProjectKioskConfig {
+		Id           string `json:"id"`
+		CreatedAt    int64  `json:"created_at"`
+		UpdatedAt    int64  `json:"updated_at"`
+		Project      string `json:"project"`
+		KioskId      string `json:"kioskId"`
+		LanguageCode string `json:"language_code"`
+		Token        string `json:"token"`
+		ProfileId    string `json:"profileId"`
+		ProfileName  string `json:"profileName"`
+		Enabled      bool   `json:"enabled"`
+	}
+	GetProjectKioskConfigReq {
+		Project string `path:"project"`
+		KioskId string `path:"kioskId,optional"`
+	}
+	GetProjectKioskConfigResp {
+		Nodes   []ProjectKioskConfig `json:"nodes"`
+		Success bool                 `json:"success"`
+		Message string               `json:"message"`
+	}
+	GetProjectKioskConfigByKioskResp {
+		Nodes   ProjectKioskConfig `json:"node"`
+		Success bool               `json:"success"`
+		Message string             `json:"message"`
+	}
+	UpdateProjectKioskConfigReq {
+		Project      string `path:"project"`
+		KioskId      string `path:"kioskId"`
+		Token        string `json:"token"`
+		LanguageCode string `json:"language_code,optional"`
+		Enabled      bool   `json:"enabled,optional,default=true"`
+	}
+	UpdateProjectKioskConfigResp {
+		Data    ProjectKioskConfig `json:"data"`
+		Success bool               `json:"success"`
+		Message string             `json:"message"`
+	}
+	ProjectAvatar {
+		Id        string `json:"id"`
+		Project   string `json:"project"`
+		ProfileId string `json:"profileId"`
+		Token     string `json:"token"`
+		Name      string `json:"name"`
+		Enabled   bool   `json:"enabled"`
+	}
+	GetProjectAvatarListReq {
+		Project string `path:"project"`
+	}
+	GetProjectAvatarListResp {
+		Nodes   []ProjectAvatar `json:"nodes"`
+		Success bool            `json:"success"`
+		Message string          `json:"message"`
+	}
+	RegisterDeviceReq {
+		RoomID string `json:"roomId"`
+	}
+	RegisterDeviceResp {
+		ClientId string `json:"clientId"`
+	}
+	CheckRegisterDeviceReq {
+		ClientId string `path:"clientId"`
+	}
+	CheckRegisterDeviceResp {
+		Token   string `json:"token"`
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	ClientRegisterReq {
+		ClientId  string `json:"clientId" validate:"required"`
+		UserId    string `json:"userId" validate:"required"`
+		ProfileId string `json:"profileId" validate:"required"`
+	}
+	ClientRegister {
+		Id        string `json:"id"`
+		ClientId  string `json:"clientId"`
+		UserId    string `json:"userId"`
+		ProfileId string `json:"profileId"`
+	}
+	ClientRegisterResp {
+		Data    ClientRegister `json:"data"`
+		Success bool           `json:"success"`
+		Message string         `json:"message"`
+	}
+)
+
+@server (
+	prefix: /v1/kiosk
+	group:  kiosk
+)
+service web-api {
+	@handler GetProjectKioskConfigHandler
+	get /config/:project (GetProjectKioskConfigReq) returns (GetProjectKioskConfigResp)
+
+	@handler GetProjectKioskConfigByKioskHandler
+	get /config/:project/:kioskId (GetProjectKioskConfigReq) returns (GetProjectKioskConfigByKioskResp)
+
+	@handler UpdateProjectKioskConfigHandler
+	post /config/:project/:kioskId (UpdateProjectKioskConfigReq) returns (UpdateProjectKioskConfigResp)
+
+	@handler GetProjectAvatarListHandler
+	get /avatar/:project (GetProjectAvatarListReq) returns (GetProjectAvatarListResp)
+
+	@handler RegisterDeviceHandler
+	post /register (RegisterDeviceReq) returns (RegisterDeviceResp)
+
+	@handler CheckRegisterDeviceHandler
+	get /check/:clientId (CheckRegisterDeviceReq) returns (CheckRegisterDeviceResp)
+
+	@handler NewClientRegisterHandler
+	post /connect (ClientRegisterReq) returns (ClientRegisterResp)
+}
+
+type (
+	DigitalHumanSubscribeResp {
+		Type            string `json:"type"`
+		ProfileId       string `json:"profileId,omitempty"`
+		ModelId         string `json:"modelId,omitempty"`
+		VoiceId         string `json:"voiceId,omitempty"`
+		DefaultVideoUrl string `json:"defaultVideoUrl,omitempty"`
+	}
+)
+
+@server (
+	prefix:     /v1/kiosk
+	group:      kiosk
+	middleware: XApiKeyHeaderMiddleware
+	timeout:    0
+	sse:        true
+)
+service web-api {
+	@handler DigitalHumanSubscribeHandler
+	get /digital-human returns (DigitalHumanSubscribeResp)
+}
+
+/////////////////////////////////////
+// Project Specific APIs - Midland //
+/////////////////////////////////////
+type (
+	NetArea {
+		Original *string  `json:"original,optional"`
+		NetArea  *float64 `json:"net_area,optional,string"`
+		Range    string   `json:"range,optional,default=Equal"`
+	}
+	NetFtPrice {
+		Original   *string  `json:"original,optional"`
+		NetFtPrice *float64 `json:"net_ft_price,optional,string"`
+		Range      string   `json:"range,optional,default=Equal"`
+	}
+	BldgAge {
+		Original *string  `json:"original,optional"`
+		BldgAge  *float64 `json:"bldg_age,optional,string"`
+		Range    string   `json:"range,optional,default=Equal"`
+	}
+	Price {
+		Original *string  `json:"original,optional,string"`
+		Price    *float64 `json:"price,optional,string"`
+		Range    string   `json:"range,optional,default=Equal"`
+	}
+	Bedroom {
+		Original *string  `json:"original,optional"`
+		Bedrooms *float64 `json:"bedrooms,optional,string"`
+		Range    *string  `json:"range,optional"`
+	}
+	OthersRoom {
+		Original   *string  `json:"original,optional"`
+		OthersRoom *float64 `json:"others_room,optional,string"`
+		Range      *string  `json:"range,optional"`
+	}
+	Bathroom {
+		Original  *string  `json:"original,optional"`
+		Bathrooms *float64 `json:"bathrooms,optional,string"`
+		Range     *string  `json:"range,optional"`
+	}
+	MbedRoom {
+		Original *string  `json:"original,optional"`
+		MbedRoom *float64 `json:"mbed_room,optional,string"`
+		Range    *string  `json:"range,optional"`
+	}
+	GetMidlandPropertyListReq {
+		Lang          string     `json:"lang"`
+		Text          string     `json:"text,optional"`
+		TxType        string     `json:"tx_type,optional"`
+		MtrIds        []string   `json:"mtr_ids,default=[]"`
+		SchoolNet     []string   `json:"school_net,default=[]"`
+		IntsmdistIds  []string   `json:"intsmdist_ids,default=[]"`
+		EstIds        []string   `json:"est_ids,default=[]"`
+		PhaseIds      []string   `json:"phase_ids,default=[]"`
+		Developer     string     `json:"developer,optional"`
+		Garden        []string   `json:"garden,default=[]"`
+		FacilityGroup []string   `json:"facilityGroup,default=[]"`
+		Price         Price      `json:"price,optional"`
+		NetArea       NetArea    `json:"net_area,optional"`
+		NetFtPrice    NetFtPrice `json:"net_ft_price,optional"`
+		BldgAge       BldgAge    `json:"bldg_age,optional"`
+		Bedroom       Bedroom    `json:"bedroom,optional"`
+		MbedRoom      MbedRoom   `json:"mbed_room,optional"`
+		OthersRoom    OthersRoom `json:"others_room,optional"`
+		Bathroom      Bathroom   `json:"bathroom,optional"`
+		FloorLevel    []string   `json:"floor_level,default=[]"`
+		UniversityIds []string   `json:"university_ids, default=[]"`
+		Type          []string   `json:"type,default=[]"`
+		Category      []string   `json:"category,default=[]"`
+		Limit         int32      `json:"limit"`
+	// Page          int32    `json:"page"`
+	}
+	GetMidlandPropertyListResp {
+		Payload interface{} `json:"payload"`
+		Type    string      `json:"type,default=property_type"`
+	}
+	GetMidlandNewsListReq {
+		Tag string `json:"tag,optional"`
+	}
+	GetMidlandNewsListResp {
+		Payload interface{} `json:"payload"`
+		Type    string      `json:"type,default=news_type"`
+	}
+	MidlandDialogFlowReq {
+		DialogFlowReq
+	}
+	MidlandDialogFlowResp {
+		DialogFlowResp
+	}
+)
+
+@server (
+	prefix: /v1/midland
+	group:  midland
+)
+service web-api {
+	@handler GetMidlandPropertyListHandler
+	post /property (GetMidlandPropertyListReq) returns (GetMidlandPropertyListResp)
+
+	@handler GetMidlandPropertiesHandler
+	post /properties (MidlandDialogFlowReq) returns (MidlandDialogFlowResp)
+
+	@handler GetMidlandNewsListHandler
+	post /news (GetMidlandNewsListReq) returns (GetMidlandNewsListResp)
+}
+
+/////////////////////////////////
+// Project Specific APIs - KFC //
+/////////////////////////////////
+type (
+	KfcWeatherReq {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	}
+	KfcWeatherResp {
+		Datetime    string `json:"datetime"`
+		Description string `json:"description"`
+		Temperature string `json:"temperature"`
+		Humidity    string `json:"humidity"`
+	}
+	KfcMemberReq {
+		MemberId string `json:"memberId"`
+	}
+	KfcMemberApiResponseData {
+		Fcode string `json:"fcode"`
+		Name  string `json:"name"`
+	}
+	KfcMemberApiResponse {
+		Status   string                     `json:"status"`
+		Orderid  string                     `json:"orderid"`
+		Url      string                     `json:"url"`
+		Imageurl string                     `json:"imageurl"`
+		Datatype string                     `json:"datatype"` // 1:外帶 2:外送
+		Shopname string                     `json:"shopname"`
+		Address  string                     `json:"address"`
+		Amount   string                     `json:"amount"`
+		Data     []KfcMemberApiResponseData `json:"data"`
+	}
+	KfcMemberResp {
+		Data KfcMemberApiResponse `json:"data"`
+	}
+	KFCItemApiResponseData {
+		Category    string `json:"category,optional"`
+		Cname       string `json:"cname,optional"`
+		Description string `json:"description,optional"`
+		Fcode       string `json:"Fcode,optional"`
+		Img         string `json:"img,optional"`
+		Price       int16  `json:"price,optional"`
+	}
+	KfcItemResp {
+		Data  []KFCItemApiResponseData `json:"data"`
+		Foods []string                 `json:"foods"`
+	}
+)
+
+@server (
+	prefix:     /v1/custom/kfc
+	group:      custom
+	middleware: AuthHeaderMiddleware
+)
+service web-api {
+	@handler KfcWeatherHandler
+	post /weather (KfcWeatherReq) returns (KfcWeatherResp)
+
+	@handler KfcMemberHandler
+	post /member (KfcMemberReq) returns (KfcMemberResp)
+
+	@handler KfcItemHandler
+	get /item returns (KfcItemResp)
+}
+
+//////////////////////////////////////
+// Project Specific APIs - SingPost //
+//////////////////////////////////////
+type (
+	SingpostCheckout {
+		Id                  string                 `json:"id"`
+		Amount              float32                `json:"amount"`
+		MerchantReferenceId string                 `json:"merchantReferenceId"`
+		Status              string                 `json:"status"`
+		SessionId           string                 `json:"sessionId"`
+		KioskId             string                 `json:"kioskId"`
+		PaymentStatus       string                 `json:"paymentStatus"`
+		KioskReceiveStatus  string                 `json:"kioskReceiveStatus"`
+		KioskMessage        string                 `json:"kioskMessage"`
+		Details             map[string]interface{} `json:"details"`
+	}
+	SingpostGetPaymentStatusReq {
+		MerchantReferenceId string `path:"merchant_reference_id"`
+	}
+	SingpostKioskUpdateStatusReq {
+		SingpostGetPaymentStatusReq
+		KioskReceiveStatus string `json:"kioskReceiveStatus"`
+		KioskMessage       string `json:"kioskMessage"`
+	}
+	SingpostDialogFlowReq {
+		DialogFlowReq
+	}
+	SingpostDialogFlowResp {
+		DialogFlowResp
+	}
+)
+
+@server (
+	prefix: /v1/custom/singpost
+	group:  singpost
+)
+service web-api {
+	@handler SingpostPaymentCheckoutHandler
+	post /checkout (SingpostDialogFlowReq) returns (SingpostDialogFlowResp)
+
+	@handler SingpostGetTrackingLabelHandler
+	post /tracking_label (SingpostDialogFlowReq) returns (SingpostDialogFlowResp)
+
+	@handler SingpostGetPaymentStatusHandler
+	get /payment_status/:merchant_reference_id (SingpostGetPaymentStatusReq) returns (SingpostCheckout)
+
+	@handler SingpostKioskUpdateStatusHandler
+	post /kiosk_update_status/:merchant_reference_id (SingpostKioskUpdateStatusReq) returns (SingpostCheckout)
+}
+
+////////////////////////////////////
+// Project Specific APIs - Toyota //
+////////////////////////////////////
+type (
+	GetOutlookScheduleReq {
+		UserEmail     string `json:"userEmail"`
+		StartDateTime string `json:"startDateTime"`
+		EndDateTime   string `json:"endDateTime"`
+		Timezone      string `json:"timezone,default=Asia/Tokyo"`
+	}
+	ScheduleDatetime {
+		DateTime string `json:"dateTime"`
+		TimeZone string `json:"timeZone"`
+	}
+	ScheduleItem {
+		Status  string           `json:"status"`
+		Start   ScheduleDatetime `json:"start"`
+		End     ScheduleDatetime `json:"end"`
+		Subject string           `json:"subject"`
+	}
+	GetOutlookScheduleResp {
+		Data []ScheduleItem `json:"data"`
+	}
+	ToyotaDialogFlowReq {
+		DialogFlowReq
+	}
+	ToyotaDialogFlowResp {
+		DialogFlowResp
+	}
+)
+
+@server (
+	prefix: /v1/custom/toyota
+	group:  toyota
+)
+service web-api {
+	// Deprecated, replace by /schedule
+	@handler ToyotaOutlookScheduleHandler
+	post /outlook (GetOutlookScheduleReq) returns (GetOutlookScheduleResp)
+
+	@handler ToyotaGetOutlookScheduleHandler
+	post /schedule (ToyotaDialogFlowReq) returns (ToyotaDialogFlowResp)
+
+	@handler ToyotaCreateOutlookScheduleHandler
+	post /scheduleCreate (ToyotaDialogFlowReq) returns (ToyotaDialogFlowResp)
+
+	@handler ToyotaUpdateOutlookScheduleHandler
+	post /scheduleUpdate (ToyotaDialogFlowReq) returns (ToyotaDialogFlowResp)
+
+	@handler ToyotaDeleteOutlookScheduleHandler
+	post /scheduleDelete (ToyotaDialogFlowReq) returns (ToyotaDialogFlowResp)
+}
+
+type (
+	MediaText {
+		Type         string `json:"type,default=text"`
+		Format       string `json:"format,default=default"`
+		LanguageCode string `json:"language_code"`
+		Content      string `json:"content"`
+	}
+	MediaMedia {
+		Type    string `json:"type"`
+		Format  string `json:"format"`
+		Content string `json:"content"`
+	}
+	NewClientMessageRequest {
+		ApiKey          string `header:"x-api-key"`
+		SessionName     string `json:"session_name"`
+		TextContent     string `json:"text_content"`
+		LanguageCode    string `json:"language_code,default=en-US"`
+		SkipAudioRender bool   `json:"skipAudioRender,default=true"`
+		SkipVideoRender bool   `json:"skipVideoRender,default=true"`
+		ReturnUrl       string `json:"return_url,optional"`
+		Gesture         string `json:"gesture,default=default"`
+	}
+	NewClientMessageResp {
+		Id              string                 `json:"id"`
+		CreatedAt       int64                  `json:"createdAt"`
+		UpdatedAt       int64                  `json:"updatedAt"`
+		SessionId       string                 `json:"sessionId"`
+		ProfileId       string                 `json:"profileId"`
+		Role            string                 `json:"role"`
+		Credit          int32                  `json:"credit"`
+		RequestId       string                 `json:"requestId,omitempty"`
+		DisplayText     []MediaText            `json:"displayText"`
+		DisplayTextHash string                 `json:"displayTextHash,omitempty"`
+		VoiceText       []MediaText            `json:"voiceText"`
+		VoiceTextHash   string                 `json:"voiceTextHash,omitempty"`
+		Media           []MediaMedia           `json:"media"`
+		AudioUrl        string                 `json:"audioUrl,omitempty"`
+		VideoUrl        string                 `json:"videoUrl,omitempty"`
+		Details         map[string]interface{} `json:"details"`
+		AudioStatus     string                 `json:"audioStatus,omitempty"`
+		VideoStatus     string                 `json:"videoStatus,omitempty"`
+		ClientId        string                 `json:"clientId"`
+	}
+	ChatSessionRatingReq {
+		SessionId string  `json:"session_id"`
+		Rating    float64 `json:"rating,optional"`
+		Comment   string  `json:"comment,optional"`
+	}
+	ChatSessionRatingResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	ChatTimeoutFallbackReq {
+		SessionId       string `json:"session_id"`
+		UserMessage     string `json:"user_message"`
+		FallbackMessage string `json:"fallback_message"`
+		RequestId       string `json:"request_id,optional"`
+	}
+	NewClientSessionReq {
+		ApiKey             string `header:"x-api-key"`
+		ClientName         string `json:"client_name"`
+		EndOriginalSession bool   `json:"end_original_session,default=true"`
+	}
+	ChatSession {
+		Id        string `json:"id"`
+		CreatedAt int64  `json:"createdAt"`
+		UpdatedAt int64  `json:"updatedAt"`
+		ProfileId string `json:"profileId"`
+		ClientId  string `json:"clientId"`
+		IsActive  bool   `json:"isActive"`
+	}
+	NewClientSessionResp {
+		Success bool         `json:"success"`
+		Session *ChatSession `json:"session,omitempty"`
+	}
+	ChatMessageNewEntryReq {
+		ApiKey       string                 `header:"x-api-key"`
+		SessionId    string                 `json:"session_id"`
+		TextContent  string                 `json:"text_content,optional"`
+		Query        string                 `json:"query,optional"`
+		LanguageCode string                 `json:"language_code"`
+		Role         string                 `json:"role,default=user"`
+		Metadata     map[string]interface{} `json:"metadata,optional"`
+		VideoUrl     string                 `json:"video_url,optional"`
+		Gesture      string                 `json:"gesture,default=default"`
+		FlowName     *string                `json:"flow_name,optional"`
+		PageName     *string                `json:"page_name,optional"`
+		IntentName   *string                `json:"intent_name,optional"`
+	}
+	ChatMessage {
+		Id          string                 `json:"id"`
+		CreatedAt   int64                  `json:"createdAt"`
+		UpdatedAt   int64                  `json:"updatedAt"`
+		SessionId   string                 `json:"sessionId"`
+		ProfileId   string                 `json:"profileId"`
+		Role        string                 `json:"role"`
+		Credit      int32                  `json:"credit"`
+		DisplayText []MediaText            `json:"displayText"`
+		Media       []MediaMedia           `json:"media"`
+		VideoBucket string                 `json:"videoBucket,omitempty"`
+		VideoPath   string                 `json:"videoPath,omitempty"`
+		VideoUrl    string                 `json:"videoUrl,omitempty"`
+		Details     map[string]interface{} `json:"details,omitempty"`
+	}
+	ChatMessageNewEntryResp {
+		Success bool         `json:"success"`
+		Message *ChatMessage `json:"message"`
+	}
+	ChatProfileConfigReq {
+		ApiKey       string `header:"x-api-key"`
+		LanguageCode string `path:"language_code,default=en-US"`
+	}
+	ChatProfileConfigResp {
+		Success bool     `json:"success"`
+		Channel *Channel `json:"channel"`
+	}
+)
+
+@server (
+	prefix: /v1/chat
+	group:  chat
+)
+service web-api {
+	@handler NewClientMessageHandler
+	post /new_client_message (NewClientMessageRequest) returns (NewClientMessageResp)
+
+	@handler NewClientMessageStreamHandler
+	post /new_client_message/stream (NewClientMessageRequest)
+
+	@handler ChatSessionRatingHandler
+	post /session/rating (ChatSessionRatingReq) returns (ChatSessionRatingResp)
+
+	@handler ChatTimeoutFallbackHandler
+	post /session/timeout_fallback (ChatTimeoutFallbackReq) returns (ChatSessionRatingResp)
+
+	@handler ChatNewClientSessionHandler
+	post /session/new_client_session (NewClientSessionReq) returns (NewClientSessionResp)
+
+	@handler ChatMessageNewEntryHandler
+	post /message/new_entry (ChatMessageNewEntryReq) returns (ChatMessageNewEntryResp)
+
+	@handler ChatProfileConfigHandler
+	get /message/profile_config/:language_code (ChatProfileConfigReq) returns (ChatProfileConfigResp)
+}
+
+type (
+	ChatMessageConversationStreamReq {
+		ApiKey string `header:"x-api-key"`
+	}
+	ChatMessageConversationStreamResp {
+		Event   string       `json:"event"`
+		Message *ChatMessage `json:"message,omitempty"`
+	}
+)
+
+@server (
+	prefix:  /v1/chat
+	group:   chat
+	timeout: 0s
+	sse:     true
+)
+service web-api {
+	@handler ChatMessageConversationStreamHandler
+	get /message/conversation/stream (ChatMessageConversationStreamReq) returns (ChatMessageConversationStreamResp)
+}
+
+type (
+	OneMapSearchReq {
+		SearchVal string `json:"searchVal"`
+		PageNum   int32  `json:"pageNum,default=1"`
+	}
+	OneMapPlace {
+		Address   string `json:"ADDRESS"`
+		BlkNo     string `json:"BLK_NO"`
+		Building  string `json:"BUILDING"`
+		Latitude  string `json:"LATITUDE"`
+		Longitude string `json:"LONGITUDE"`
+		Postal    string `json:"POSTAL"`
+		RoadName  string `json:"ROAD_NAME"`
+		Searchval string `json:"SEARCHVAL"`
+		X         string `json:"X"`
+		Y         string `json:"Y"`
+	}
+	OneMapSearch {
+		Found         int           `json:"found"`
+		PageNum       int           `json:"pageNum"`
+		Results       []OneMapPlace `json:"results"`
+		TotalNumPages int           `json:"totalNumPages"`
+	}
+	OneMapSearchResp {
+		Result OneMapSearch `json:"result"`
+	}
+	OneMapRoutingReq {
+		Start     string `json:"start" validate:"latlong"`
+		End       string `json:"end"  validate:"latlong"`
+		RouteType string `json:"routeType,default=drive,options=drive|walk|pt|cycle" validate:"lowercase"`
+		Mode      string `json:"mode,omitempty,optional,options=TRANSIT|BUS|RAIL" validate:"omitempty,uppercase"`
+		Date      string `json:"date,omitempty,optional" validate:"omitempty,datetime=01-02-2006"`
+		Time      string `json:"time,omitempty,optional" validate:"omitempty,datetime=15:04:05"`
+	}
+	OneMapRoutingResp {
+		Result map[string]interface{} `json:"result"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/onemap
+	group:  onemap
+)
+service web-api {
+	@handler OneMapSearchHandler
+	post /search (OneMapSearchReq) returns (OneMapSearchResp)
+
+	@handler OneMapSearchGroupHandler
+	post /search/group (OneMapSearchReq) returns (OneMapSearchResp)
+
+	@handler OneMapRoutingHandler
+	post /routing (OneMapRoutingReq) returns (OneMapRoutingResp)
+}
+
+type (
+	ViuGetQuotaReq {
+		Token string `form:"token"`
+	}
+	ViuGetQuotaResp {
+		HasChatbotQuota  bool `json:"has_chatbot_quota"`
+		MaxSessionCount  int  `json:"max_session_count"`
+		UsedSessionCount int  `json:"used_session_count"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/viu
+	group:  viu
+)
+service web-api {
+	@handler ViuGetQuotaHandler
+	get /quota (ViuGetQuotaReq) returns (ViuGetQuotaResp)
+}
+
+type (
+	DatamallGetBusArrivalReq {
+		BusStopCode string `form:"BusStopCode"`
+		ServiceNo   string `form:"ServiceNo,omitempty,optional"`
+	}
+	DatamallGetPassengerVolumeTrainReq {
+		Date *string `form:"Date,omitempty,optional"`
+	}
+	DatamallGetPassengerVolumeOdTrainReq {
+		Date *string `form:"Date,omitempty,optional"`
+	}
+	DatamallGetPCDRealTimeReq {
+		Station string `json:"station"`
+	}
+	DataMallPCDRealTimeValue {
+		Station    string `json:"Station"`
+		StartTime  string `json:"StartTime"`
+		EndTime    string `json:"EndTime"`
+		CrowdLevel string `json:"CrowdLevel"`
+	}
+	DataMallPCDRealTimeValueResp {
+		Result DataMallPCDRealTimeValue `json:"result"`
+	}
+	DatamallCommonResp {
+		Result map[string]interface{} `json:"result"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/datamall
+	group:  datamall
+)
+service web-api {
+	@handler DatamallGetBusArrivalHandler
+	get /BusArrival (DatamallGetBusArrivalReq) returns (DatamallCommonResp)
+
+	@handler DatamallGetBusRoutesHandler
+	get /BusRoutes returns (DatamallCommonResp)
+
+	@handler DatamallGetBusServicesHandler
+	get /BusServices returns (DatamallCommonResp)
+
+	@handler DatamallGetBusStopsHandler
+	get /BusStops returns (DatamallCommonResp)
+
+	@handler DatamallGetPassengerVolumeOdTrainHandler
+	get /PassengerVolumeOdTrain (DatamallGetPassengerVolumeOdTrainReq) returns (DatamallCommonResp)
+
+	@handler DatamallGetPassengerVolumeTrainHandler
+	get /PassengerVolumeTrain (DatamallGetPassengerVolumeTrainReq) returns (DatamallCommonResp)
+
+	@handler DatamallGetTrainServiceAlertsHandler
+	get /TrainServiceAlerts returns (DatamallCommonResp)
+
+	@handler DatamallGetPCDRealTimeHandler
+	post /PCDRealTime (DatamallGetPCDRealTimeReq) returns (DataMallPCDRealTimeValueResp)
+}
+
+type (
+	SbsTransitNews {
+		Title string `json:"title"`
+		Url   string `json:"url"`
+		Date  string `json:"date"`
+	}
+	SbsTransitNewsResp {
+		News []SbsTransitNews `json:"news"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/sbs-transit
+	group:  sbs_transit
+)
+service web-api {
+	@handler SbsTransitNewsHandler
+	get /news returns (SbsTransitNewsResp)
+}
+
+type (
+	GoogleMapSearchReq {
+		Query        string   `json:"query"`
+		LanguageCode string   `json:"languageCode,default=en-US" validate:"bcp47_language_tag"`
+		Location     Location `json:"location,optional"`
+		Radius       float64  `json:"radius,default=100000"`
+	}
+	Location {
+		Latitude  float64 `json:"latitude" validate:"latitude"`
+		Longitude float64 `json:"longitude" validate:"longitude"`
+	}
+	Displayname {
+		Text         string `json:"text,omitempty"`
+		LanguageCode string `json:"languageCode,omitempty"`
+	}
+	GoogleMapPlace {
+		Name                   string      `json:"name"`
+		ID                     string      `json:"id"`
+		FormattedAddress       string      `json:"formattedAddress"`
+		Location               Location    `json:"location"`
+		Rating                 int         `json:"rating"`
+		GoogleMapsUri          string      `json:"googleMapsUri,omitempty"`
+		UserRatingCount        int         `json:"userRatingCount,omitempty"`
+		DisplayName            Displayname `json:"displayName,omitempty"`
+		PrimaryTypeDisplayName Displayname `json:"primaryTypeDisplayName,omitempty"`
+		PrimaryType            string      `json:"primaryType,omitempty"`
+		EditorialSummary       Displayname `json:"editorialSummary,omitempty"`
+	}
+	GoogleMapSearchResp {
+		Places  []GoogleMapPlace `json:"places"`
+		Isbrand bool             `json:"isBrand"`
+	}
+	GoogleMapRoutingReq {
+		Origin       Location `json:"origin"`
+		Destination  Location `json:"destination"`
+		Mode         string   `json:"mode,omitempty,optional,options=TRAVEL_MODE_UNSPECIFIED|DRIVE|BICYCLE|WALK|TWO_WHEELER|TRANSIT,default=TRANSIT" validate:"omitempty,uppercase"`
+		LanguageCode string   `json:"languageCode,omitempty,optional" validate:"omitempty,bcp47_language_tag"`
+	}
+	GoogleMapRoutingResp {
+		Result interface{} `json:"result"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/google/maps
+	group:  google_maps
+)
+service web-api {
+	@handler GoogleMapSearchHandler
+	post /search (GoogleMapSearchReq) returns (GoogleMapSearchResp)
+
+	@handler GoogleMapRoutingHandler
+	post /routing (GoogleMapRoutingReq) returns (GoogleMapRoutingResp)
+}
+
+type (
+	NavitimeMapSearchReq {
+		Query        string   `json:"query"`
+		Location     Location `json:"location,optional"`
+		Radius       float64  `json:"radius,default=100000"`
+		LanguageCode string   `json:"languageCode,default=en" validate:"bcp47_language_tag"`
+	}
+	NavitimeMapSearchResp {
+		Items []Item `json:"items"`
+		Unit  Unit   `json:"unit"`
+	}
+	Item {
+		Code       string   `json:"code"`
+		Name       string   `json:"name"`
+		PostalCode string   `json:"postal_code"`
+		Coord      Coord    `json:"coord"`
+		Details    []Detail `json:"details"`
+		IsEnd      bool     `json:"is_end"`
+	}
+	Coord {
+		Lat float64 `json:"lat"`
+		Lon float64 `json:"lon"`
+	}
+	Detail {
+		Code  string `json:"code"`
+		Name  string `json:"name"`
+		Ruby  string `json:"ruby"`
+		Level string `json:"level"`
+	}
+	Unit {
+		Datum     string `json:"datum"`
+		CoordUnit string `json:"coord_unit"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/navitime/maps
+	group:  navitime_maps
+)
+service web-api {
+	@handler NavitimeMapSearchHandler
+	post /search (NavitimeMapSearchReq) returns (NavitimeMapSearchResp)
+}
+
+type (
+	AgentLocation {
+		Location string `json:"location"`
+		AgentId  string `json:"agentId"`
+	}
+	EntityType_Entity {
+		Value    string   `json:"value"`
+		Synonyms []string `json:"synonyms"`
+	}
+	UpsertDialogflowEntityReq {
+		Agent          AgentLocation       `json:"agent"`
+		EntityTypeName string              `json:"entityTypeName"`
+		Entities       []EntityType_Entity `json:"entities"`
+	}
+	UpsertDialogflowEntityResp {
+		Success bool `json:"success"`
+	}
+)
+
+@server (
+	prefix: /v1/bot
+	group:  bot
+)
+service web-api {
+	@handler UpsertDialogflowEntityHandler
+	post /upsert-dialogflow-entity (UpsertDialogflowEntityReq) returns (UpsertDialogflowEntityResp)
+}
+
+type (
+	SingpoolUpsertLotteryRecordReq {
+		Employee       string  `json:"employee"`
+		LotteryNumbers []int32 `json:"lottery_numbers"`
+	}
+	SingpoolUpsertLotteryRecordResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/singpool
+	group:  singpool
+)
+service web-api {
+	@handler SingpoolUpsertLotteryRecordHandler
+	post /lottery/upsert (SingpoolUpsertLotteryRecordReq) returns (SingpoolUpsertLotteryRecordResp)
+}
+
+type (
+	AzureSttWebsocketLangReq {
+		Lang string `path:"lang"`
+	}
+)
+
+@server (
+	prefix: /v1/azure
+	group:  azure
+)
+service web-api {
+	@handler AzureSttWebsocketHandler
+	get /stt/ws
+
+	@handler AzureHealthHandler
+	get /health
+
+	@handler AzureSttWebsocketLangHandler
+	get /stt/ws/:lang (AzureSttWebsocketLangReq)
+}
+
+@server (
+	prefix:  /v1/iflytek
+	group:   iflytek
+	timeout: 0
+)
+service web-api {
+	@handler IflytekSttWebsocketHandler
+	get /stt/ws
+}
+
+type (
+	QwenSttWebsocketLangReq {
+		Lang string `path:"lang"`
+	}
+)
+
+@server (
+	prefix:  /v1/qwen
+	group:   qwen
+	timeout: 0
+)
+service web-api {
+	@handler QwenSttWebsocketLangHandler
+	get /stt/ws/:lang (QwenSttWebsocketLangReq)
+}
+
+type (
+	WeatherResp {
+		Success bool                   `json:"success"`
+		Message string                 `json:"message"`
+		Result  map[string]interface{} `json:"result"`
+	}
+)
+
+@server (
+	prefix:     /v1/custom/weather
+	group:      weather
+	middleware: CacheMiddleware
+)
+service web-api {
+	@handler WeatherHandler
+	get / returns (WeatherResp)
+
+	@handler WeatherByCityHandler
+	get /city returns (WeatherResp)
+}
+
+type (
+	GetMarketIndexQuoteResp {
+		Success bool                   `json:"success"`
+		Message string                 `json:"message"`
+		Result  map[string]interface{} `json:"result"`
+	}
+)
+
+@server (
+	prefix:     /v1/custom/index
+	group:      index
+	middleware: CacheMiddleware
+)
+service web-api {
+	@handler GetMarketIndexQuoteHandler
+	get /quotes returns (GetMarketIndexQuoteResp)
+
+	@handler GetMarketIndexQuoteByIndexHandler
+	get /quotes/index returns (GetMarketIndexQuoteResp)
+
+	@handler GetForexExchangeRateHandler
+	get /forex returns (GetMarketIndexQuoteResp)
+
+	@handler GetForexExchangeRateByCurrencyHandler
+	get /forex/currency returns (GetMarketIndexQuoteResp)
+}
+
+type (
+	TierRate {
+		Tier string `json:"tier"`
+		Rate string `json:"rate"`
+	}
+	RateRow {
+		Period string     `json:"period"`
+		Tiers  []TierRate `json:"tiers"`
+	}
+	DepositRate {
+		Currency string    `json:"currency"`
+		Rates    []RateRow `json:"rates"`
+	}
+	HsbcGetDepositRateResp {
+		Data DepositRate `json:"data"`
+	}
+	HsbcGetForexRatePromoResp {
+		PromoTitle       string   `json:"promo_title"`
+		PromoDescription []string `json:"promo_description"`
+		PromoNote        string   `json:"promo_note"`
+	}
+	HsbcGetTimeDepositResp {
+		PromoTitle       string   `json:"promo_title"`
+		PromoDescription []string `json:"promo_description"`
+	}
+	HsbcRecordTicketReq {
+		BranchCode   string `json:"branch_code"`
+		LanguageCode string `json:"language_code,default=zh-HK"`
+	}
+	HsbcRecordTicketResp {
+		Success bool `json:"success"`
+	}
+	HsbcTicketTransactionStatisticResp {
+		TicketType string `json:"ticket_type"`
+		Count      int32  `json:"count"`
+	}
+	HsbcTicketTransactionStatisticReq {
+		TicketType string `path:"ticket_type"`
+	}
+)
+
+@server (
+	prefix:     /v1/custom/hsbc
+	group:      hsbc
+	middleware: CacheMiddleware
+)
+service web-api {
+	@handler HsbcGetDepositRateHandler
+	get /deposit-rate returns (HsbcGetDepositRateResp)
+
+	@handler HsbcGetForexRatePromoHandler
+	get /forex-rate returns (HsbcGetForexRatePromoResp)
+
+	@handler HsbcGetTimeDepositHandler
+	get /time-deposit returns (HsbcGetTimeDepositResp)
+
+	@handler HsbcRecordTicketHandler
+	post /record-ticket (HsbcRecordTicketReq) returns (HsbcRecordTicketResp)
+}
+
+type (
+	AudioVoice {
+		VoiceId  string `json:"voice_id"`
+		Name     string `json:"name"`
+		Gender   string `json:"gender"`
+		Language string `json:"language"`
+	}
+	ListAudioVoiceReq {
+		Provider string `path:"provider"`
+	}
+	ListAudioVoiceResp {
+		Voices []AudioVoice `json:"voices"`
+	}
+)
+
+@server (
+	prefix: /v1/audio
+	group:  audio
+)
+service web-api {
+	@handler ListAudioVoiceHandler
+	get /voices/:provider (ListAudioVoiceReq) returns (ListAudioVoiceResp)
+}
+
+type (
+	MtrProxyNextTrainReq {
+		Line string `form:"line"`
+		Sta  string `form:"sta"`
+		Lang string `form:"lang,default=zh"`
+	}
+	MtrProxyNextTrainPayload {
+		Availability string `json:"availability"`
+		Car          string `json:"car"`
+	}
+	MtrProxyNextTrainUpDown {
+		Seq      string                     `json:"seq"`
+		Dest     string                     `json:"dest"`
+		Plat     string                     `json:"plat"`
+		Time     string                     `json:"time"`
+		Ttnt     string                     `json:"ttnt"`
+		Valid    string                     `json:"valid"`
+		Source   string                     `json:"source"`
+		Route    string                     `json:"route"`
+		TimeType string                     `json:"timeType"`
+		PaxLoad  []MtrProxyNextTrainPayload `json:"paxLoad,omitempty"`
+		Length   string                     `json:"length"`
+	}
+	MtrProxyNextTrain {
+		CurrTime         string                    `json:"curr_time"`
+		SysTime          string                    `json:"sys_time"`
+		IsPaxLoadEnabled string                    `json:"isPaxLoadEnabled"`
+		UP               []MtrProxyNextTrainUpDown `json:"UP"`
+		DOWN             []MtrProxyNextTrainUpDown `json:"DOWN"`
+	}
+	MtrProxyNextTrainResp {
+		SysTime    string                       `json:"sys_time"`
+		CurrTime   string                       `json:"curr_time"`
+		Data       map[string]MtrProxyNextTrain `json:"data"` // key is line-station code e.g. 'EAL-SHT'
+		ResultCode int                          `json:"resultCode"`
+		Timestamp  string                       `json:"timestamp"`
+		Status     int                          `json:"status"`
+		Message    string                       `json:"message"`
+	}
+	MtrProxyCreateNotificationSelection {
+		Station  string `json:"station"`
+		Location string `json:"location"`
+		Email    string `json:"email"`
+	}
+	MtrProxyCreateNotificationReq {
+		Action    string                                `json:"action"`
+		Level     int                                   `json:"level"`
+		Title     string                                `json:"title"`
+		Content   string                                `json:"content"`
+		Source    string                                `json:"source"`
+		Function  []string                              `json:"function"`
+		Selection []MtrProxyCreateNotificationSelection `json:"selection"`
+		Time      string                                `json:"time"`
+	}
+	MtrProxyCreateNotificationResp {
+		ReturnCode int    `json:"returnCode"`
+		NotiId     string `json:"notiId"`
+		Message    string `json:"message"`
+	}
+	MtrProxyDeleteNotificationReq {
+		Action string `json:"action"`
+		NotiId string `json:"notiId"`
+		Time   string `json:"time"`
+	}
+	MtrProxyDeleteNotificationResp {
+		ReturnCode int    `json:"returnCode"`
+		Message    string `json:"message"`
+	}
+	MtrMailAlertReq {
+		Subject string `json:"subject"`
+		Content string `json:"content"`
+	}
+	MtrMailAlertResp {
+		ReturnCode int    `json:"returnCode"`
+		Message    string `json:"message"`
+	}
+	MtrTtpHrRouteResp {
+		ErrorCode            string             `json:"errorCode"`
+		ErrorMsg             string             `json:"errorMsg"`
+		StationOpeningHours  string             `json:"stationOpeningHours"`
+		FirstTrain           MtrTtpHrRouteTrain `json:"firstTrain"`
+		LastTrain            MtrTtpHrRouteTrain `json:"lastTrain"`
+		FirstLastTrainRemark string             `json:"firstLastTrainRemark"`
+		Tnc                  string             `json:"tnc"`
+		Routes               []HRRouteDto       `json:"routes"`
+	}
+	MtrTtpHrRouteTrain {
+		Time        string      `json:"time"`
+		Interchange interface{} `json:"interchange"`
+		Links       []string    `json:"links"`
+	}
+	MtrTtpHrRouteReq {
+		O    string `form:"o"`
+		D    string `form:"d"`
+		Lang string `form:"lang"`
+	}
+	MtrTtpLrRouteResp {
+		ErrorCode            int                        `json:"errorCode"`
+		ErrorMsg             string                     `json:"errorMsg"`
+		Fares                HRRouteMessageFareClassDto `json:"fares"`
+		FirstTrain           MtrTtpLrTrain              `json:"firstTrain"`
+		LastTrain            MtrTtpLrTrain              `json:"lastTrain"`
+		FirstLastTrainRemark string                     `json:"firstLastTrainRemark"`
+		Tnc                  string                     `json:"tnc"`
+		Routes               []LRRouteDto               `json:"routes"`
+	}
+	MtrTtpLrTrain {
+		Time string              `json:"time"`
+		Path []MtrTtpLrTrainPath `json:"path"`
+	}
+	MtrTtpLrTrainPath {
+		ID       string `json:"ID"`
+		Towards  string `json:"towards"`
+		Platform string `json:"platform"`
+		LineID   string `json:"lineID"`
+	}
+)
+
+@server (
+	prefix: /v1/custom/mtr-proxy
+	group:  mtr_proxy
+)
+service web-api {
+	@handler MtrProxyNextTrainHandler
+	get /nexttrain (MtrProxyNextTrainReq) returns (MtrProxyNextTrainResp)
+
+	@handler MtrProxyCreateNotificationHandler
+	post /notification (MtrProxyCreateNotificationReq) returns (MtrProxyCreateNotificationResp)
+
+	@handler MtrProxyDeleteNotificationHandler
+	delete /notification (MtrProxyDeleteNotificationReq) returns (MtrProxyDeleteNotificationResp)
+
+	@handler MtrMailAlertHandler
+	post /mail_alert (MtrMailAlertReq) returns (MtrMailAlertResp)
+
+	@handler MtrPrinterAlertHandler
+	post /printer_alert (MtrMailAlertReq) returns (MtrMailAlertResp)
+
+	@handler MtrUptimeAlertHandler
+	post /uptime_alert (MtrMailAlertReq) returns (MtrMailAlertResp)
+
+	@handler MtrTtpHrRouteHandler
+	get /ttp/hr (MtrTtpHrRouteReq) returns (MtrTtpHrRouteResp)
+
+	@handler MtrTtpLrRouteHandler
+	get /ttp/lr (MtrTtpHrRouteReq) returns (MtrTtpLrRouteResp)
+}
+
+type (
+	VideoLookupGetByHashReq {
+		Hash string `path:"hash"`
+	}
+	VideoLookupGetByHashResp {
+		ReturnCode  int         `json:"returnCode"`
+		Message     string      `json:"message"`
+		VideoLookup VideoLookup `json:"videoLookup"`
+	}
+	VideoLookupCreateReq {
+		Hash        string  `json:"hash"`
+		VideoBucket string  `json:"videoBucket"`
+		VideoPath   string  `json:"videoPath"`
+		CacheId     *string `json:"cacheId,optional"`
+		Ttl         *int    `json:"ttl,optional"`
+	}
+	VideoLookup {
+		Id              string  `json:"id"`
+		ModelActionHash string  `json:"model_action_hash"`
+		ModelConfigHash *string `json:"model_config_hash,optional"`
+		VideoBucket     *string `json:"videoBucket,optional"`
+		VideoPath       *string `json:"videoPath,optional"`
+		CacheId         *string `json:"cacheId,optional"`
+		Available       *bool   `json:"available,optional"`
+		Ttl             *int    `json:"ttl,optional"`
+	}
+	VideoLookupCreateResp {
+		ReturnCode  int         `json:"returnCode"`
+		Message     string      `json:"message"`
+		VideoLookup VideoLookup `json:"videoLookup"`
+	}
+	VideoLookupDeleteReq {
+		Hash string `path:"hash"`
+	}
+	VideoLookupDeleteResp {
+		ReturnCode int    `json:"returnCode"`
+		Message    string `json:"message"`
+	}
+	VideoLookupDeleteCacheReq {
+		CacheId string `path:"cacheId"`
+	}
+	VideoLookupDeleteCacheResp {
+		ReturnCode int    `json:"returnCode"`
+		Message    string `json:"message"`
+	}
+	VideoLookupListByCacheIdReq {
+		CacheId string `path:"cacheId"`
+	}
+	VideoLookupListByCacheIdResp {
+		Nodes      []VideoLookup `json:"nodes"`
+		ReturnCode int           `json:"returnCode"`
+		Message    string        `json:"message"`
+	}
+	VideoLookupListCacheIdResp {
+		CacheIds   []string `json:"cacheIds"`
+		ReturnCode int      `json:"returnCode"`
+		Message    string   `json:"message"`
+	}
+)
+
+@server (
+	prefix:     /v1/video-lookup
+	group:      video_lookup
+	middleware: XApiKeyHeaderMiddleware
+)
+service web-api {
+	@handler VideoLookupGetByHashHandler
+	get /:hash (VideoLookupGetByHashReq) returns (VideoLookupGetByHashResp)
+
+	@handler VideoLookupCreateHandler
+	post / (VideoLookupCreateReq) returns (VideoLookupCreateResp)
+
+	@handler VideoLookupDeleteHandler
+	delete /:hash (VideoLookupDeleteReq) returns (VideoLookupDeleteResp)
+
+	@handler VideoLookupListByCacheIdHandler
+	get /cache/:cacheId (VideoLookupListByCacheIdReq) returns (VideoLookupListByCacheIdResp)
+
+	@handler VideoLookupDeleteCacheHandler
+	delete /cache/:cacheId (VideoLookupDeleteCacheReq) returns (VideoLookupDeleteCacheResp)
+
+	@handler VideoLookupListCacheIdHandler
+	get /cache returns (VideoLookupListCacheIdResp)
+}
+
+type (
+	ValidateUserAuthOtpReq {
+		OtpCode string `json:"otpCode"`
+		Token   string `header:"X-Api-Key"`
+	}
+	ValidateUserAuthOtpResp {
+		IsValid bool `json:"isValid"`
+	}
+	UserAuthMagicLinkRequestReq {
+		Email string `json:"email"`
+		Token string `header:"x-api-key"`
+	}
+	UserAuthMagicLinkRequestResp {
+		ChallengeId     string `json:"challengeId"`
+		ExpiresInSecond int64  `json:"expiresInSeconds"`
+	}
+	UserAuthMagicLinkStreamReq {
+		ChallengeId string `form:"challengeId"`
+		Token       string `header:"x-api-key"`
+	}
+	UserAuthMagicLinkStreamResp {
+		Event   string `json:"event"`
+		Message string `json:"message,omitempty"`
+	}
+	UserAuthMagicLinkVerifyReq {
+		Token string `form:"token"`
+	}
+	UserAuthMagicLinkVerifyResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+)
+
+@server (
+	prefix: /v1/userauth
+	group:  userauth
+)
+service web-api {
+	@handler ValidateUserAuthOtpHandler
+	post /validate-otp (ValidateUserAuthOtpReq) returns (ValidateUserAuthOtpResp)
+
+	@handler UserAuthMagicLinkRequestHandler
+	post /magic-link/request (UserAuthMagicLinkRequestReq) returns (UserAuthMagicLinkRequestResp)
+
+	@handler UserAuthMagicLinkVerifyHandler
+	get /magic-link/verify (UserAuthMagicLinkVerifyReq) returns (UserAuthMagicLinkVerifyResp)
+
+	@handler UserAuthMagicLinkVerifyConfirmHandler
+	post /magic-link/verify (UserAuthMagicLinkVerifyReq) returns (UserAuthMagicLinkVerifyResp)
+}
+
+@server (
+	prefix:  /v1/userauth
+	group:   userauth
+	timeout: 5m
+	sse:     true
+)
+service web-api {
+	@handler UserAuthMagicLinkStreamHandler
+	get /magic-link (UserAuthMagicLinkStreamReq) returns (UserAuthMagicLinkStreamResp)
+}
+
+type (
+	MailAlertReq {
+		Name    string `json:"name"`
+		OrgId   string `json:"orgId"`
+		Subject string `json:"subject"`
+		Content string `json:"content"`
+	}
+	MailAlertResp {
+		ReturnCode int    `json:"returnCode"`
+		Message    string `json:"message"`
+	}
+)
+
+@server (
+	prefix: /v1/mail-alert
+	group:  mail_alert
+)
+service web-api {
+	@handler MailAlertHandler
+	post / (MailAlertReq) returns (MailAlertResp)
+}
+
+type (
+	EchoResp {
+		Method     string                 `json:"method"`
+		Path       string                 `json:"path"`
+		Headers    map[string]interface{} `json:"headers"`
+		RemoteAddr string                 `json:"remoteAddr"`
+		ClientIp   string                 `json:"clientIp"`
+	}
+)
+
+@server (
+	prefix: /v1/echo
+	group:  echo
+)
+service web-api {
+	@handler EchoHandler
+	get / returns (EchoResp)
+}
+
