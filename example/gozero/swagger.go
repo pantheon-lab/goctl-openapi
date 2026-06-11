@@ -10,11 +10,11 @@ import (
 
 type Opts func(*swaggerConfig)
 
-// SwaggerOpts configures the Doc gmiddlewares.
+// SwaggerOpts configures the Doc middlewares.
 type swaggerConfig struct {
 	// SpecURL the url to find the spec for
 	SpecURL string
-	// SwaggerHost for the js that generates the swagger ui site, defaults to: http://petstore.swagger.io/
+	// SwaggerHost for the js that generates the swagger ui site
 	SwaggerHost string
 }
 
@@ -27,13 +27,11 @@ func Doc(basePath, env string, opts ...Opts) http.HandlerFunc {
 		opt(config)
 	}
 
-	// swagger html
-	tmpl := template.Must(template.New("swaggerdoc").Parse(swaggerTemplateV2))
+	tmpl := template.Must(template.New("swaggerdoc").Parse(swaggerTemplateV3))
 	buf := bytes.NewBuffer(nil)
 	err := tmpl.Execute(buf, config)
 	uiHTML := buf.Bytes()
 
-	// permission
 	needPermission := false
 	if env == "prod" {
 		needPermission = true
@@ -68,49 +66,27 @@ func Doc(basePath, env string, opts ...Opts) http.HandlerFunc {
 	}
 }
 
-const swaggerTemplateV2 = `
-	<!-- HTML for static distribution bundle build -->
-<!DOCTYPE html>
+const swaggerTemplateV3 = `<!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8">
     <title>API documentation</title>
-    <link rel="stylesheet" type="text/css" href="{{ .SwaggerHost }}/swagger-ui.css" >
-    <link rel="icon" type="image/png" href="{{ .SwaggerHost }}/favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="{{ .SwaggerHost }}/favicon-16x16.png" sizes="16x16" />
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
     <style>
-      html
-      {
-        box-sizing: border-box;
-        overflow: -moz-scrollbars-vertical;
-        overflow-y: scroll;
-      }
-
-      *,
-      *:before,
-      *:after
-      {
-        box-sizing: inherit;
-      }
-
-      body
-      {
-        margin:0;
-        background: #fafafa;
-      }
+      html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+      *, *:before, *:after { box-sizing: inherit; }
+      body { margin:0; background: #fafafa; }
     </style>
-  </head>
-
-  <body>
+</head>
+<body>
     <div id="swagger-ui"></div>
-
-    <script src="{{ .SwaggerHost }}/swagger-ui-bundle.js"> </script>
-    <script src="{{ .SwaggerHost }}/swagger-ui-standalone-preset.js"> </script>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
     <script>
     window.onload = function() {
-      // Begin Swagger UI call region
       const ui = SwaggerUIBundle({
-        "dom_id": "#swagger-ui",
+        url: "{{ .SpecURL }}",
+        dom_id: "#swagger-ui",
         deepLinking: true,
         presets: [
           SwaggerUIBundle.presets.apis,
@@ -120,13 +96,10 @@ const swaggerTemplateV2 = `
           SwaggerUIBundle.plugins.DownloadUrl
         ],
         layout: "StandaloneLayout",
-		validatorUrl: null,
-        url: "{{ .SpecURL }}",
+        validatorUrl: null,
       })
-
-      // End Swagger UI call region
       window.ui = ui
     }
-  </script>
-  </body>
+    </script>
+</body>
 </html>`

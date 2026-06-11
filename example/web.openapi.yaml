@@ -1,0 +1,5768 @@
+openapi: 3.1.0
+info:
+  title: ""
+  version: ""
+servers:
+  - url: http://localhost
+    description: API server
+paths:
+  /v1/audio/voices/{provider}:
+    get:
+      operationId: ListAudioVoiceHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAudioVoiceResp'
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - audio
+  /v1/azure/health:
+    get:
+      operationId: AzureHealthHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - azure
+  /v1/azure/stt/ws:
+    get:
+      operationId: AzureSttWebsocketHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - azure
+  /v1/azure/stt/ws/{lang}:
+    get:
+      operationId: AzureSttWebsocketLangHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: lang
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - azure
+  /v1/bot/upsert-dialogflow-entity:
+    post:
+      operationId: UpsertDialogflowEntityHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpsertDialogflowEntityResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertDialogflowEntityReq'
+      tags:
+        - bot
+  /v1/catalog/active:
+    get:
+      operationId: GetGetCatalogListHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCatalogListResp'
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      tags:
+        - catalog
+    post:
+      operationId: GetCatalogListHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCatalogListResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetCatalogListReq'
+      tags:
+        - catalog
+  /v1/catalog/click:
+    post:
+      operationId: NewCatalogClickTransactionHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogClickTransaction'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewCatalogClickTransactionReq'
+      tags:
+        - catalog
+  /v1/chat/message/conversation/stream:
+    get:
+      operationId: ChatMessageConversationStreamHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageConversationStreamResp'
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      tags:
+        - chat
+  /v1/chat/message/new_entry:
+    post:
+      operationId: ChatMessageNewEntryHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageNewEntryResp'
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageNewEntryReq'
+      tags:
+        - chat
+  /v1/chat/message/profile_config/{language_code}:
+    get:
+      operationId: ChatProfileConfigHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatProfileConfigResp'
+      parameters:
+        - name: language_code
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      tags:
+        - chat
+  /v1/chat/new_client_message:
+    post:
+      operationId: NewClientMessageHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewClientMessageResp'
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: '#/components/requestBodies/NewClientMessageRequest'
+      tags:
+        - chat
+  /v1/chat/new_client_message/stream:
+    post:
+      operationId: NewClientMessageStreamHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: '#/components/requestBodies/NewClientMessageRequest'
+      tags:
+        - chat
+  /v1/chat/session/new_client_session:
+    post:
+      operationId: ChatNewClientSessionHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewClientSessionResp'
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewClientSessionReq'
+      tags:
+        - chat
+  /v1/chat/session/rating:
+    post:
+      operationId: ChatSessionRatingHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionRatingResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSessionRatingReq'
+      tags:
+        - chat
+  /v1/chat/session/timeout_fallback:
+    post:
+      operationId: ChatTimeoutFallbackHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionRatingResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatTimeoutFallbackReq'
+      tags:
+        - chat
+  /v1/custom/datamall/BusArrival:
+    get:
+      operationId: DatamallGetBusArrivalHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatamallCommonResp'
+      parameters:
+        - name: BusStopCode
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: ServiceNo
+          in: query
+          required: false
+          schema:
+            type: string
+      tags:
+        - datamall
+  /v1/custom/datamall/BusRoutes:
+    get:
+      operationId: DatamallGetBusRoutesHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatamallCommonResp'
+      tags:
+        - datamall
+  /v1/custom/datamall/BusServices:
+    get:
+      operationId: DatamallGetBusServicesHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatamallCommonResp'
+      tags:
+        - datamall
+  /v1/custom/datamall/BusStops:
+    get:
+      operationId: DatamallGetBusStopsHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatamallCommonResp'
+      tags:
+        - datamall
+  /v1/custom/datamall/PCDRealTime:
+    post:
+      operationId: DatamallGetPCDRealTimeHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataMallPCDRealTimeValueResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatamallGetPCDRealTimeReq'
+      tags:
+        - datamall
+  /v1/custom/datamall/PassengerVolumeOdTrain:
+    get:
+      operationId: DatamallGetPassengerVolumeOdTrainHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatamallCommonResp'
+      parameters:
+        - name: Date
+          in: query
+          required: false
+          schema:
+            type: string
+      tags:
+        - datamall
+  /v1/custom/datamall/PassengerVolumeTrain:
+    get:
+      operationId: DatamallGetPassengerVolumeTrainHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatamallCommonResp'
+      parameters:
+        - name: Date
+          in: query
+          required: false
+          schema:
+            type: string
+      tags:
+        - datamall
+  /v1/custom/datamall/TrainServiceAlerts:
+    get:
+      operationId: DatamallGetTrainServiceAlertsHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatamallCommonResp'
+      tags:
+        - datamall
+  /v1/custom/google/maps/routing:
+    post:
+      operationId: GoogleMapRoutingHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleMapRoutingResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleMapRoutingReq'
+      tags:
+        - google_maps
+  /v1/custom/google/maps/search:
+    post:
+      operationId: GoogleMapSearchHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleMapSearchResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleMapSearchReq'
+      tags:
+        - google_maps
+  /v1/custom/hsbc/deposit-rate:
+    get:
+      operationId: HsbcGetDepositRateHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsbcGetDepositRateResp'
+      tags:
+        - hsbc
+  /v1/custom/hsbc/forex-rate:
+    get:
+      operationId: HsbcGetForexRatePromoHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsbcGetForexRatePromoResp'
+      tags:
+        - hsbc
+  /v1/custom/hsbc/record-ticket:
+    post:
+      operationId: HsbcRecordTicketHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsbcRecordTicketResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HsbcRecordTicketReq'
+      tags:
+        - hsbc
+  /v1/custom/hsbc/time-deposit:
+    get:
+      operationId: HsbcGetTimeDepositHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsbcGetTimeDepositResp'
+      tags:
+        - hsbc
+  /v1/custom/index/forex:
+    get:
+      operationId: GetForexExchangeRateHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMarketIndexQuoteResp'
+      tags:
+        - index
+  /v1/custom/index/forex/currency:
+    get:
+      operationId: GetForexExchangeRateByCurrencyHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMarketIndexQuoteResp'
+      tags:
+        - index
+  /v1/custom/index/quotes:
+    get:
+      operationId: GetMarketIndexQuoteHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMarketIndexQuoteResp'
+      tags:
+        - index
+  /v1/custom/index/quotes/index:
+    get:
+      operationId: GetMarketIndexQuoteByIndexHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMarketIndexQuoteResp'
+      tags:
+        - index
+  /v1/custom/kfc/item:
+    get:
+      operationId: KfcItemHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KfcItemResp'
+      tags:
+        - custom
+  /v1/custom/kfc/member:
+    post:
+      operationId: KfcMemberHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KfcMemberResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KfcMemberReq'
+      tags:
+        - custom
+  /v1/custom/kfc/weather:
+    post:
+      operationId: KfcWeatherHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KfcWeatherResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KfcWeatherReq'
+      tags:
+        - custom
+  /v1/custom/mtr-proxy/mail_alert:
+    post:
+      operationId: MtrMailAlertHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrMailAlertResp'
+      requestBody:
+        $ref: '#/components/requestBodies/MtrMailAlertReq'
+      tags:
+        - mtr_proxy
+  /v1/custom/mtr-proxy/nexttrain:
+    get:
+      operationId: MtrProxyNextTrainHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrProxyNextTrainResp'
+      parameters:
+        - name: line
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: sta
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+            default: zh
+      tags:
+        - mtr_proxy
+  /v1/custom/mtr-proxy/notification:
+    delete:
+      operationId: MtrProxyDeleteNotificationHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrProxyDeleteNotificationResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MtrProxyDeleteNotificationReq'
+      tags:
+        - mtr_proxy
+    post:
+      operationId: MtrProxyCreateNotificationHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrProxyCreateNotificationResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MtrProxyCreateNotificationReq'
+      tags:
+        - mtr_proxy
+  /v1/custom/mtr-proxy/printer_alert:
+    post:
+      operationId: MtrPrinterAlertHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrMailAlertResp'
+      requestBody:
+        $ref: '#/components/requestBodies/MtrMailAlertReq'
+      tags:
+        - mtr_proxy
+  /v1/custom/mtr-proxy/ttp/hr:
+    get:
+      operationId: MtrTtpHrRouteHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrTtpHrRouteResp'
+      parameters:
+        - name: o
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: d
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - mtr_proxy
+  /v1/custom/mtr-proxy/ttp/lr:
+    get:
+      operationId: MtrTtpLrRouteHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrTtpLrRouteResp'
+      parameters:
+        - name: o
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: d
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - mtr_proxy
+  /v1/custom/mtr-proxy/uptime_alert:
+    post:
+      operationId: MtrUptimeAlertHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtrMailAlertResp'
+      requestBody:
+        $ref: '#/components/requestBodies/MtrMailAlertReq'
+      tags:
+        - mtr_proxy
+  /v1/custom/navitime/maps/search:
+    post:
+      operationId: NavitimeMapSearchHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavitimeMapSearchResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NavitimeMapSearchReq'
+      tags:
+        - navitime_maps
+  /v1/custom/onemap/routing:
+    post:
+      operationId: OneMapRoutingHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneMapRoutingResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OneMapRoutingReq'
+      tags:
+        - onemap
+  /v1/custom/onemap/search:
+    post:
+      operationId: OneMapSearchHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneMapSearchResp'
+      requestBody:
+        $ref: '#/components/requestBodies/OneMapSearchReq'
+      tags:
+        - onemap
+  /v1/custom/onemap/search/group:
+    post:
+      operationId: OneMapSearchGroupHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneMapSearchResp'
+      requestBody:
+        $ref: '#/components/requestBodies/OneMapSearchReq'
+      tags:
+        - onemap
+  /v1/custom/sbs-transit/news:
+    get:
+      operationId: SbsTransitNewsHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SbsTransitNewsResp'
+      tags:
+        - sbs_transit
+  /v1/custom/singpool/lottery/upsert:
+    post:
+      operationId: SingpoolUpsertLotteryRecordHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingpoolUpsertLotteryRecordResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SingpoolUpsertLotteryRecordReq'
+      tags:
+        - singpool
+  /v1/custom/singpost/checkout:
+    post:
+      operationId: SingpostPaymentCheckoutHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingpostDialogFlowResp'
+      requestBody:
+        $ref: '#/components/requestBodies/SingpostDialogFlowReq'
+      tags:
+        - singpost
+  /v1/custom/singpost/kiosk_update_status/{merchant_reference_id}:
+    post:
+      operationId: SingpostKioskUpdateStatusHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingpostCheckout'
+      parameters:
+        - name: merchant_reference_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SingpostKioskUpdateStatusReq'
+      tags:
+        - singpost
+  /v1/custom/singpost/payment_status/{merchant_reference_id}:
+    get:
+      operationId: SingpostGetPaymentStatusHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingpostCheckout'
+      parameters:
+        - name: merchant_reference_id
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - singpost
+  /v1/custom/singpost/tracking_label:
+    post:
+      operationId: SingpostGetTrackingLabelHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingpostDialogFlowResp'
+      requestBody:
+        $ref: '#/components/requestBodies/SingpostDialogFlowReq'
+      tags:
+        - singpost
+  /v1/custom/toyota/outlook:
+    post:
+      operationId: ToyotaOutlookScheduleHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOutlookScheduleResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetOutlookScheduleReq'
+      tags:
+        - toyota
+  /v1/custom/toyota/schedule:
+    post:
+      operationId: ToyotaGetOutlookScheduleHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToyotaDialogFlowResp'
+      requestBody:
+        $ref: '#/components/requestBodies/ToyotaDialogFlowReq'
+      tags:
+        - toyota
+  /v1/custom/toyota/scheduleCreate:
+    post:
+      operationId: ToyotaCreateOutlookScheduleHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToyotaDialogFlowResp'
+      requestBody:
+        $ref: '#/components/requestBodies/ToyotaDialogFlowReq'
+      tags:
+        - toyota
+  /v1/custom/toyota/scheduleDelete:
+    post:
+      operationId: ToyotaDeleteOutlookScheduleHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToyotaDialogFlowResp'
+      requestBody:
+        $ref: '#/components/requestBodies/ToyotaDialogFlowReq'
+      tags:
+        - toyota
+  /v1/custom/toyota/scheduleUpdate:
+    post:
+      operationId: ToyotaUpdateOutlookScheduleHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToyotaDialogFlowResp'
+      requestBody:
+        $ref: '#/components/requestBodies/ToyotaDialogFlowReq'
+      tags:
+        - toyota
+  /v1/custom/viu/quota:
+    get:
+      operationId: ViuGetQuotaHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViuGetQuotaResp'
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - viu
+  /v1/custom/weather/:
+    get:
+      operationId: WeatherHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherResp'
+      tags:
+        - weather
+  /v1/custom/weather/city:
+    get:
+      operationId: WeatherByCityHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherResp'
+      tags:
+        - weather
+  /v1/echo/:
+    get:
+      operationId: EchoHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EchoResp'
+      tags:
+        - echo
+  /v1/health:
+    get:
+      operationId: PingHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - general
+  /v1/iflytek/stt/ws:
+    get:
+      operationId: IflytekSttWebsocketHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - iflytek
+  /v1/kiosk/avatar/{project}:
+    get:
+      operationId: GetProjectAvatarListHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectAvatarListResp'
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - kiosk
+  /v1/kiosk/check/{clientId}:
+    get:
+      operationId: CheckRegisterDeviceHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckRegisterDeviceResp'
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - kiosk
+  /v1/kiosk/config/{project}:
+    get:
+      operationId: GetProjectKioskConfigHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectKioskConfigResp'
+      parameters:
+        - name: project
+          in: path
+          required: false
+          schema:
+            type: string
+      tags:
+        - kiosk
+  /v1/kiosk/config/{project}/{kioskId}:
+    get:
+      operationId: GetProjectKioskConfigByKioskHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectKioskConfigByKioskResp'
+      parameters:
+        - name: project
+          in: path
+          required: false
+          schema:
+            type: string
+        - name: kioskId
+          in: path
+          required: false
+          schema:
+            type: string
+      tags:
+        - kiosk
+    post:
+      operationId: UpdateProjectKioskConfigHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProjectKioskConfigResp'
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: kioskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectKioskConfigReq'
+      tags:
+        - kiosk
+  /v1/kiosk/connect:
+    post:
+      operationId: NewClientRegisterHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientRegisterResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRegisterReq'
+      tags:
+        - kiosk
+  /v1/kiosk/digital-human:
+    get:
+      operationId: DigitalHumanSubscribeHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DigitalHumanSubscribeResp'
+      tags:
+        - kiosk
+  /v1/kiosk/register:
+    post:
+      operationId: RegisterDeviceHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterDeviceResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceReq'
+      tags:
+        - kiosk
+  /v1/mail-alert/:
+    post:
+      operationId: MailAlertHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailAlertResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailAlertReq'
+      tags:
+        - mail_alert
+  /v1/midland/news:
+    post:
+      operationId: GetMidlandNewsListHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMidlandNewsListResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetMidlandNewsListReq'
+      tags:
+        - midland
+  /v1/midland/properties:
+    post:
+      operationId: GetMidlandPropertiesHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MidlandDialogFlowResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MidlandDialogFlowReq'
+      tags:
+        - midland
+  /v1/midland/property:
+    post:
+      operationId: GetMidlandPropertyListHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMidlandPropertyListResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetMidlandPropertyListReq'
+      tags:
+        - midland
+  /v1/oauth/github:
+    get:
+      operationId: OauthGithubRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: redirect
+          in: query
+          required: false
+          schema:
+            type: string
+      tags:
+        - auth
+  /v1/oauth/github/authorized:
+    get:
+      operationId: OauthGithubAuthorizedRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - auth
+  /v1/oauth/github/fail:
+    get:
+      operationId: OauthGithubFailRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - auth
+  /v1/oauth/google:
+    get:
+      operationId: OauthGoogleRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: redirect
+          in: query
+          required: false
+          schema:
+            type: string
+      tags:
+        - auth
+  /v1/oauth/google/authorized:
+    get:
+      operationId: OauthGoogleAuthorizedRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - auth
+  /v1/oauth/google/fail:
+    get:
+      operationId: OauthGoogleFailRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - auth
+  /v1/oauth/refresh_token:
+    post:
+      operationId: RefreshTokenRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenReq'
+      tags:
+        - auth
+  /v1/oauth/shopify:
+    get:
+      operationId: OauthShopifyRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: shop
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - auth
+  /v1/oauth/shopify/authorized:
+    get:
+      operationId: OauthShopifyAuthorizedRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: hmac
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: shop
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - auth
+  /v1/oauth/signin:
+    post:
+      operationId: SignInRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInRes'
+      parameters:
+        - name: Origin
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInDto'
+      tags:
+        - auth
+  /v1/oauth/signup:
+    post:
+      operationId: SignUpRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpRes'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpDto'
+      tags:
+        - auth
+  /v1/profile/get_channel:
+    post:
+      operationId: GetChannelHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetChannelReq'
+      tags:
+        - profile
+      security:
+        - bearerAuth: []
+        - apiKey: []
+  /v1/profile/list_model_actions:
+    get:
+      operationId: ListModelActionsHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListModelActionsResp'
+      parameters:
+        - name: use_embedded
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+      tags:
+        - profile
+      security:
+        - bearerAuth: []
+        - apiKey: []
+  /v1/qwen/stt/ws/{lang}:
+    get:
+      operationId: QwenSttWebsocketLangHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: lang
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - qwen
+  /v1/render/get_station_avatar:
+    post:
+      operationId: GetStationAvatarHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetStationAvatarResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetStationAvatarReq'
+      tags:
+        - render
+  /v1/render/new_flexible_request:
+    post:
+      operationId: NewFlexibleRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderRequest'
+      requestBody:
+        $ref: '#/components/requestBodies/NewFlexibleRequest'
+      tags:
+        - render
+  /v1/render/new_flexible_request/stream:
+    post:
+      operationId: NewFlexibleRequestStreamHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      requestBody:
+        $ref: '#/components/requestBodies/NewFlexibleRequest'
+      tags:
+        - render
+  /v1/render/new_request:
+    post:
+      operationId: NewRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderRequest'
+      requestBody:
+        $ref: '#/components/requestBodies/NewRenderRequest'
+      tags:
+        - render
+  /v1/render/new_request/stream:
+    post:
+      operationId: NewRequestStreamHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      requestBody:
+        $ref: '#/components/requestBodies/NewRenderRequest'
+      tags:
+        - render
+  /v1/render/upsert_avatar_actions:
+    post:
+      operationId: UpsertAvatarActions
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarActions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvatarActions'
+      tags:
+        - render
+  /v1/upload/:
+    post:
+      operationId: UploadHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResp'
+      requestBody:
+        $ref: '#/components/requestBodies/UploadReq'
+      tags:
+        - upload
+  /v1/upload/media:
+    post:
+      operationId: UploadChatAgentMediaHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResp'
+      requestBody:
+        $ref: '#/components/requestBodies/UploadReq'
+      tags:
+        - upload
+  /v1/user/data:
+    get:
+      operationId: GetUserDataHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserData'
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+      tags:
+        - user
+      security:
+        - bearerAuth: []
+        - apiKey: []
+  /v1/userauth/magic-link:
+    get:
+      operationId: UserAuthMagicLinkStreamHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAuthMagicLinkStreamResp'
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: challengeId
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - userauth
+  /v1/userauth/magic-link/request:
+    post:
+      operationId: UserAuthMagicLinkRequestHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAuthMagicLinkRequestResp'
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAuthMagicLinkRequestReq'
+      tags:
+        - userauth
+  /v1/userauth/magic-link/verify:
+    get:
+      operationId: UserAuthMagicLinkVerifyHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAuthMagicLinkVerifyResp'
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - userauth
+    post:
+      operationId: UserAuthMagicLinkVerifyConfirmHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAuthMagicLinkVerifyResp'
+      requestBody:
+        $ref: '#/components/requestBodies/UserAuthMagicLinkVerifyReq'
+      tags:
+        - userauth
+  /v1/userauth/validate-otp:
+    post:
+      operationId: ValidateUserAuthOtpHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateUserAuthOtpResp'
+      parameters:
+        - name: X-Api-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateUserAuthOtpReq'
+      tags:
+        - userauth
+  /v1/video-lookup/:
+    post:
+      operationId: VideoLookupCreateHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoLookupCreateResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoLookupCreateReq'
+      tags:
+        - video_lookup
+  /v1/video-lookup/{hash}:
+    get:
+      operationId: VideoLookupGetByHashHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoLookupGetByHashResp'
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - video_lookup
+    delete:
+      operationId: VideoLookupDeleteHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoLookupDeleteResp'
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoLookupDeleteReq'
+      tags:
+        - video_lookup
+  /v1/video-lookup/cache:
+    get:
+      operationId: VideoLookupListCacheIdHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoLookupListCacheIdResp'
+      tags:
+        - video_lookup
+  /v1/video-lookup/cache/{cacheId}:
+    get:
+      operationId: VideoLookupListByCacheIdHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoLookupListByCacheIdResp'
+      parameters:
+        - name: cacheId
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - video_lookup
+    delete:
+      operationId: VideoLookupDeleteCacheHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoLookupDeleteCacheResp'
+      parameters:
+        - name: cacheId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoLookupDeleteCacheReq'
+      tags:
+        - video_lookup
+  /v1/webhook/setsail:
+    post:
+      operationId: SetsailChatResponseHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetsailChatResponseDto'
+      tags:
+        - webhook
+  /v1/webhook/setsail/update:
+    post:
+      operationId: SetsailUpdateStationProfileHandler
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetsailUpdateStationProfileResp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetsailUpdateStationProfileReq'
+      tags:
+        - webhook
+components:
+  schemas:
+    AgentLocation:
+      type: object
+      title: AgentLocation
+      properties:
+        agentId:
+          type: string
+        location:
+          type: string
+      required:
+        - location
+        - agentId
+    AttachmentDto:
+      type: object
+      title: AttachmentDto
+      properties:
+        payload:
+          $ref: '#/components/schemas/PayloadDto'
+        type:
+          type: string
+      required:
+        - type
+        - payload
+    AudioVoice:
+      type: object
+      title: AudioVoice
+      properties:
+        gender:
+          type: string
+        language:
+          type: string
+        name:
+          type: string
+        voice_id:
+          type: string
+      required:
+        - voice_id
+        - name
+        - gender
+        - language
+    AuthorizedReq:
+      type: object
+      title: AuthorizedReq
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+      required:
+        - code
+        - state
+    AvatarAction:
+      type: object
+      title: AvatarAction
+      properties:
+        actions:
+          type: array
+          items:
+            type: string
+        model_id:
+          type: string
+      required:
+        - model_id
+        - actions
+    AvatarActions:
+      type: object
+      title: AvatarActions
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvatarAction'
+      required:
+        - data
+    AzureSttWebsocketLangReq:
+      type: object
+      title: AzureSttWebsocketLangReq
+    Bathroom:
+      type: object
+      title: Bathroom
+      properties:
+        bathrooms:
+          type: string
+          nullable: true
+        original:
+          type: string
+          nullable: true
+        range:
+          type: string
+          nullable: true
+    Bedroom:
+      type: object
+      title: Bedroom
+      properties:
+        bedrooms:
+          type: string
+          nullable: true
+        original:
+          type: string
+          nullable: true
+        range:
+          type: string
+          nullable: true
+    BldgAge:
+      type: object
+      title: BldgAge
+      properties:
+        bldg_age:
+          type: string
+          nullable: true
+        original:
+          type: string
+          nullable: true
+        range:
+          type: string
+          default: Equal
+    ButtonDto:
+      type: object
+      title: ButtonDto
+      properties:
+        payload:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+      required:
+        - type
+    CarouselDetailDto:
+      type: object
+      title: CarouselDetailDto
+      properties:
+        contact:
+          type: string
+        keywords:
+          type: string
+        lang:
+          type: string
+        shopName:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+    CarouselDto:
+      type: object
+      title: CarouselDto
+      properties:
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarouselDetailDto'
+        docId:
+          type: string
+        id:
+          type: string
+        image:
+          type: string
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarouselLocationDto'
+        logo:
+          type: string
+        type:
+          type: string
+    CarouselLocationDto:
+      type: object
+      title: CarouselLocationDto
+      properties:
+        name:
+          type: string
+        unit:
+          $ref: '#/components/schemas/CarouselLocationUnitDto'
+    CarouselLocationUnitDto:
+      type: object
+      title: CarouselLocationUnitDto
+      properties:
+        id:
+          type: string
+        names:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarouselLocationUnitNameDto'
+        poiid:
+          type: string
+    CarouselLocationUnitNameDto:
+      type: object
+      title: CarouselLocationUnitNameDto
+      properties:
+        exitDescription:
+          type: string
+        language:
+          type: string
+        name:
+          type: string
+    Catalog:
+      type: object
+      title: Catalog
+      properties:
+        card_title:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        details:
+          type: object
+        file_bucket:
+          type: string
+        file_path:
+          type: string
+        file_url:
+          type: string
+        id:
+          type: string
+        is_published:
+          type: boolean
+        organization_id:
+          type: string
+        paragraph:
+          type: string
+        priority:
+          type: integer
+          format: int32
+        promotion_url:
+          type: string
+        published_at:
+          type: integer
+          format: int64
+        tag:
+          type: string
+        tag_color:
+          type: string
+        title:
+          type: string
+        trigger:
+          type: string
+        type:
+          type: string
+        updated_at:
+          type: integer
+          format: int64
+      required:
+        - id
+        - created_at
+        - updated_at
+        - title
+        - file_bucket
+        - file_path
+        - paragraph
+        - trigger
+        - priority
+        - is_published
+        - published_at
+        - organization_id
+        - tag
+        - tag_color
+        - details
+        - card_title
+        - type
+        - file_url
+        - promotion_url
+    CatalogClickTransaction:
+      type: object
+      title: CatalogClickTransaction
+      properties:
+        catalog_id:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        id:
+          type: string
+        language_code:
+          type: string
+        updated_at:
+          type: integer
+          format: int64
+        user_agent:
+          type: string
+      required:
+        - id
+        - created_at
+        - updated_at
+        - catalog_id
+        - language_code
+        - user_agent
+    Channel:
+      type: object
+      title: Channel
+      properties:
+        bot_config:
+          $ref: '#/components/schemas/Config'
+        created_at:
+          type: integer
+          format: int64
+        details:
+          type: object
+        enabled:
+          type: boolean
+        general_config:
+          $ref: '#/components/schemas/Config'
+        id:
+          type: string
+        is_default:
+          type: boolean
+        language_code:
+          type: string
+        language_config:
+          $ref: '#/components/schemas/Config'
+        model_config:
+          $ref: '#/components/schemas/Config'
+        name:
+          type: string
+        updated_at:
+          type: integer
+          format: int64
+        voice_config:
+          $ref: '#/components/schemas/Config'
+      required:
+        - id
+        - created_at
+        - updated_at
+        - language_code
+        - language_config
+        - bot_config
+        - voice_config
+        - model_config
+        - general_config
+        - name
+        - details
+        - is_default
+        - enabled
+    ChatMessage:
+      type: object
+      title: ChatMessage
+      properties:
+        createdAt:
+          type: integer
+          format: int64
+        credit:
+          type: integer
+          format: int32
+        details:
+          type: object
+        displayText:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaText'
+        id:
+          type: string
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaMedia'
+        profileId:
+          type: string
+        role:
+          type: string
+        sessionId:
+          type: string
+        updatedAt:
+          type: integer
+          format: int64
+        videoBucket:
+          type: string
+        videoPath:
+          type: string
+        videoUrl:
+          type: string
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - sessionId
+        - profileId
+        - role
+        - credit
+        - displayText
+        - media
+    ChatMessageConversationStreamReq:
+      type: object
+      title: ChatMessageConversationStreamReq
+    ChatMessageConversationStreamResp:
+      type: object
+      title: ChatMessageConversationStreamResp
+      properties:
+        event:
+          type: string
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+          nullable: true
+      required:
+        - event
+    ChatMessageNewEntryReq:
+      type: object
+      title: ChatMessageNewEntryReq
+      properties:
+        flow_name:
+          type: string
+          nullable: true
+        gesture:
+          type: string
+          default: default
+        intent_name:
+          type: string
+          nullable: true
+        language_code:
+          type: string
+        metadata:
+          type: object
+        page_name:
+          type: string
+          nullable: true
+        query:
+          type: string
+        role:
+          type: string
+          default: user
+        session_id:
+          type: string
+        text_content:
+          type: string
+        video_url:
+          type: string
+      required:
+        - session_id
+        - language_code
+        - role
+        - gesture
+    ChatMessageNewEntryResp:
+      type: object
+      title: ChatMessageNewEntryResp
+      properties:
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+          nullable: true
+        success:
+          type: boolean
+      required:
+        - success
+        - message
+    ChatProfileConfigReq:
+      type: object
+      title: ChatProfileConfigReq
+    ChatProfileConfigResp:
+      type: object
+      title: ChatProfileConfigResp
+      properties:
+        channel:
+          $ref: '#/components/schemas/Channel'
+          nullable: true
+        success:
+          type: boolean
+      required:
+        - success
+        - channel
+    ChatSession:
+      type: object
+      title: ChatSession
+      properties:
+        clientId:
+          type: string
+        createdAt:
+          type: integer
+          format: int64
+        id:
+          type: string
+        isActive:
+          type: boolean
+        profileId:
+          type: string
+        updatedAt:
+          type: integer
+          format: int64
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - profileId
+        - clientId
+        - isActive
+    ChatSessionRatingReq:
+      type: object
+      title: ChatSessionRatingReq
+      properties:
+        comment:
+          type: string
+        rating:
+          type: number
+          format: double
+        session_id:
+          type: string
+      required:
+        - session_id
+    ChatSessionRatingResp:
+      type: object
+      title: ChatSessionRatingResp
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+      required:
+        - success
+        - message
+    ChatTimeoutFallbackReq:
+      type: object
+      title: ChatTimeoutFallbackReq
+      properties:
+        fallback_message:
+          type: string
+        request_id:
+          type: string
+        session_id:
+          type: string
+        user_message:
+          type: string
+      required:
+        - session_id
+        - user_message
+        - fallback_message
+    CheckRegisterDeviceReq:
+      type: object
+      title: CheckRegisterDeviceReq
+    CheckRegisterDeviceResp:
+      type: object
+      title: CheckRegisterDeviceResp
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+        token:
+          type: string
+      required:
+        - token
+        - success
+        - message
+    ClientRegister:
+      type: object
+      title: ClientRegister
+      properties:
+        clientId:
+          type: string
+        id:
+          type: string
+        profileId:
+          type: string
+        userId:
+          type: string
+      required:
+        - id
+        - clientId
+        - userId
+        - profileId
+    ClientRegisterReq:
+      type: object
+      title: ClientRegisterReq
+      properties:
+        clientId:
+          type: string
+        profileId:
+          type: string
+        userId:
+          type: string
+      required:
+        - clientId
+        - userId
+        - profileId
+    ClientRegisterResp:
+      type: object
+      title: ClientRegisterResp
+      properties:
+        data:
+          $ref: '#/components/schemas/ClientRegister'
+        message:
+          type: string
+        success:
+          type: boolean
+      required:
+        - data
+        - success
+        - message
+    CompleteRouteDto:
+      type: object
+      title: CompleteRouteDto
+      properties:
+        fare:
+          type: string
+        info:
+          type: string
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompleteRoutePathDto'
+        promotions:
+          type: array
+          items:
+            type: string
+        routeRemark:
+          type: string
+        time:
+          type: string
+        walkingTime:
+          type: string
+    CompleteRoutePathDto:
+      type: object
+      title: CompleteRoutePathDto
+      properties:
+        coordinate:
+          type: string
+        exit:
+          type: string
+        label:
+          type: string
+        routeText:
+          type: string
+        routeType:
+          type: string
+        sRouteText:
+          type: string
+        stopType:
+          type: string
+        time:
+          type: string
+        url:
+          type: string
+    Config:
+      type: object
+      title: Config
+      properties:
+        created_at:
+          type: integer
+          format: int64
+        details:
+          type: object
+        enabled:
+          type: boolean
+        id:
+          type: string
+        language_code:
+          type: string
+        name:
+          type: string
+        updated_at:
+          type: integer
+          format: int64
+      required:
+        - id
+        - created_at
+        - updated_at
+        - language_code
+        - name
+        - details
+        - enabled
+    Coord:
+      type: object
+      title: Coord
+      properties:
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+      required:
+        - lat
+        - lon
+    DataMallPCDRealTimeValue:
+      type: object
+      title: DataMallPCDRealTimeValue
+      properties:
+        CrowdLevel:
+          type: string
+        EndTime:
+          type: string
+        StartTime:
+          type: string
+        Station:
+          type: string
+      required:
+        - Station
+        - StartTime
+        - EndTime
+        - CrowdLevel
+    DataMallPCDRealTimeValueResp:
+      type: object
+      title: DataMallPCDRealTimeValueResp
+      properties:
+        result:
+          $ref: '#/components/schemas/DataMallPCDRealTimeValue'
+      required:
+        - result
+    DatamallCommonResp:
+      type: object
+      title: DatamallCommonResp
+      properties:
+        result:
+          type: object
+      required:
+        - result
+    DatamallGetBusArrivalReq:
+      type: object
+      title: DatamallGetBusArrivalReq
+      properties:
+        BusStopCode:
+          type: string
+        ServiceNo:
+          type: string
+      required:
+        - BusStopCode
+    DatamallGetPCDRealTimeReq:
+      type: object
+      title: DatamallGetPCDRealTimeReq
+      properties:
+        station:
+          type: string
+      required:
+        - station
+    DatamallGetPassengerVolumeOdTrainReq:
+      type: object
+      title: DatamallGetPassengerVolumeOdTrainReq
+      properties:
+        Date:
+          type: string
+          nullable: true
+    DatamallGetPassengerVolumeTrainReq:
+      type: object
+      title: DatamallGetPassengerVolumeTrainReq
+      properties:
+        Date:
+          type: string
+          nullable: true
+    DepositRate:
+      type: object
+      title: DepositRate
+      properties:
+        currency:
+          type: string
+        rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/RateRow'
+      required:
+        - currency
+        - rates
+    Detail:
+      type: object
+      title: Detail
+      properties:
+        code:
+          type: string
+        level:
+          type: string
+        name:
+          type: string
+        ruby:
+          type: string
+      required:
+        - code
+        - name
+        - ruby
+        - level
+    DetailsDto:
+      type: object
+      title: DetailsDto
+      properties:
+        confidence_tier:
+          type: string
+        intent:
+          type: string
+        lang:
+          type: string
+        outgoing_mid:
+          type: string
+      required:
+        - outgoing_mid
+        - lang
+    DialogFlowReq:
+      type: object
+      title: DialogFlowReq
+      properties:
+        languageCode:
+          type: string
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - sessionInfo
+        - languageCode
+    DialogFlowResp:
+      type: object
+      title: DialogFlowResp
+      properties:
+        fulfillmentResponse:
+          $ref: '#/components/schemas/FulfillmentResponse'
+        payload:
+          $ref: '#/components/schemas/DialogFlowRespPayload'
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - fulfillmentResponse
+        - sessionInfo
+        - payload
+    DialogFlowRespPayload:
+      type: object
+      title: DialogFlowRespPayload
+      properties:
+        details:
+          type: object
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/DialogFlowRespPayloadMedia'
+      required:
+        - media
+        - details
+    DialogFlowRespPayloadMedia:
+      type: object
+      title: DialogFlowRespPayloadMedia
+      properties:
+        params:
+          $ref: '#/components/schemas/DialogFlowSignalParms'
+        type:
+          type: string
+        url:
+          type: string
+      required:
+        - type
+    DialogFlowSignalParms:
+      type: object
+      title: DialogFlowSignalParms
+      properties:
+        signal:
+          type: string
+      required:
+        - signal
+    DigitalHumanSubscribeResp:
+      type: object
+      title: DigitalHumanSubscribeResp
+      properties:
+        defaultVideoUrl:
+          type: string
+        modelId:
+          type: string
+        profileId:
+          type: string
+        type:
+          type: string
+        voiceId:
+          type: string
+      required:
+        - type
+    Displayname:
+      type: object
+      title: Displayname
+      properties:
+        languageCode:
+          type: string
+        text:
+          type: string
+    EchoResp:
+      type: object
+      title: EchoResp
+      properties:
+        clientIp:
+          type: string
+        headers:
+          type: object
+        method:
+          type: string
+        path:
+          type: string
+        remoteAddr:
+          type: string
+      required:
+        - method
+        - path
+        - headers
+        - remoteAddr
+        - clientIp
+    EntityType_Entity:
+      type: object
+      title: EntityType_Entity
+      properties:
+        synonyms:
+          type: array
+          items:
+            type: string
+        value:
+          type: string
+      required:
+        - value
+        - synonyms
+    FulfillmentMessage:
+      type: object
+      title: FulfillmentMessage
+      properties:
+        payload:
+          type: object
+      required:
+        - payload
+    FulfillmentResponse:
+      type: object
+      title: FulfillmentResponse
+      properties:
+        message:
+          type: array
+          items:
+            $ref: '#/components/schemas/FulfillmentMessage'
+    GetCatalogListReq:
+      type: object
+      title: GetCatalogListReq
+      properties:
+        limit:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+      required:
+        - page
+        - limit
+    GetCatalogListResp:
+      type: object
+      title: GetCatalogListResp
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Catalog'
+      required:
+        - nodes
+    GetChannelReq:
+      type: object
+      title: GetChannelReq
+      properties:
+        channel_id:
+          type: string
+        language_code:
+          type: string
+        profile_id:
+          type: string
+    GetGetCatalogListReq:
+      type: object
+      title: GetGetCatalogListReq
+      properties:
+        limit:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+      required:
+        - page
+        - limit
+    GetMarketIndexQuoteResp:
+      type: object
+      title: GetMarketIndexQuoteResp
+      properties:
+        message:
+          type: string
+        result:
+          type: object
+        success:
+          type: boolean
+      required:
+        - success
+        - message
+        - result
+    GetMidlandNewsListReq:
+      type: object
+      title: GetMidlandNewsListReq
+      properties:
+        tag:
+          type: string
+    GetMidlandNewsListResp:
+      type: object
+      title: GetMidlandNewsListResp
+      properties:
+        payload:
+          type: object
+        type:
+          type: string
+          default: news_type
+      required:
+        - payload
+        - type
+    GetMidlandPropertyListReq:
+      type: object
+      title: GetMidlandPropertyListReq
+      properties:
+        bathroom:
+          $ref: '#/components/schemas/Bathroom'
+        bedroom:
+          $ref: '#/components/schemas/Bedroom'
+        bldg_age:
+          $ref: '#/components/schemas/BldgAge'
+        category:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        developer:
+          type: string
+        est_ids:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        facilityGroup:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        floor_level:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        garden:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        intsmdist_ids:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        lang:
+          type: string
+        limit:
+          type: integer
+          format: int32
+        mbed_room:
+          $ref: '#/components/schemas/MbedRoom'
+        mtr_ids:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        net_area:
+          $ref: '#/components/schemas/NetArea'
+        net_ft_price:
+          $ref: '#/components/schemas/NetFtPrice'
+        others_room:
+          $ref: '#/components/schemas/OthersRoom'
+        phase_ids:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        price:
+          $ref: '#/components/schemas/Price'
+        school_net:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        text:
+          type: string
+        tx_type:
+          type: string
+        type:
+          type: array
+          items:
+            type: string
+          default: '[]'
+        university_ids:
+          type: array
+          items:
+            type: string
+      required:
+        - lang
+        - mtr_ids
+        - school_net
+        - intsmdist_ids
+        - est_ids
+        - phase_ids
+        - garden
+        - facilityGroup
+        - floor_level
+        - university_ids
+        - type
+        - category
+        - limit
+    GetMidlandPropertyListResp:
+      type: object
+      title: GetMidlandPropertyListResp
+      properties:
+        payload:
+          type: object
+        type:
+          type: string
+          default: property_type
+      required:
+        - payload
+        - type
+    GetOutlookScheduleReq:
+      type: object
+      title: GetOutlookScheduleReq
+      properties:
+        endDateTime:
+          type: string
+        startDateTime:
+          type: string
+        timezone:
+          type: string
+          default: Asia/Tokyo
+        userEmail:
+          type: string
+      required:
+        - userEmail
+        - startDateTime
+        - endDateTime
+        - timezone
+    GetOutlookScheduleResp:
+      type: object
+      title: GetOutlookScheduleResp
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleItem'
+      required:
+        - data
+    GetProjectAvatarListReq:
+      type: object
+      title: GetProjectAvatarListReq
+    GetProjectAvatarListResp:
+      type: object
+      title: GetProjectAvatarListResp
+      properties:
+        message:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAvatar'
+        success:
+          type: boolean
+      required:
+        - nodes
+        - success
+        - message
+    GetProjectKioskConfigByKioskResp:
+      type: object
+      title: GetProjectKioskConfigByKioskResp
+      properties:
+        message:
+          type: string
+        node:
+          $ref: '#/components/schemas/ProjectKioskConfig'
+        success:
+          type: boolean
+      required:
+        - node
+        - success
+        - message
+    GetProjectKioskConfigReq:
+      type: object
+      title: GetProjectKioskConfigReq
+    GetProjectKioskConfigResp:
+      type: object
+      title: GetProjectKioskConfigResp
+      properties:
+        message:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectKioskConfig'
+        success:
+          type: boolean
+      required:
+        - nodes
+        - success
+        - message
+    GetStationAvatarReq:
+      type: object
+      title: GetStationAvatarReq
+      properties:
+        lang:
+          type: string
+        stationName:
+          type: string
+      required:
+        - stationName
+        - lang
+    GetStationAvatarResp:
+      type: object
+      title: GetStationAvatarResp
+      properties:
+        model_key:
+          type: string
+        profile_id:
+          type: string
+        token:
+          type: string
+      required:
+        - token
+        - model_key
+        - profile_id
+    GoogleMapPlace:
+      type: object
+      title: GoogleMapPlace
+      properties:
+        displayName:
+          $ref: '#/components/schemas/Displayname'
+        editorialSummary:
+          $ref: '#/components/schemas/Displayname'
+        formattedAddress:
+          type: string
+        googleMapsUri:
+          type: string
+        id:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+        name:
+          type: string
+        primaryType:
+          type: string
+        primaryTypeDisplayName:
+          $ref: '#/components/schemas/Displayname'
+        rating:
+          type: integer
+          format: int32
+        userRatingCount:
+          type: integer
+          format: int32
+      required:
+        - name
+        - id
+        - formattedAddress
+        - location
+        - rating
+    GoogleMapRoutingReq:
+      type: object
+      title: GoogleMapRoutingReq
+      properties:
+        destination:
+          $ref: '#/components/schemas/Location'
+        languageCode:
+          type: string
+        mode:
+          type: string
+          enum:
+            - TRAVEL_MODE_UNSPECIFIED
+            - DRIVE
+            - BICYCLE
+            - WALK
+            - TWO_WHEELER
+            - TRANSIT
+          default: TRANSIT
+        origin:
+          $ref: '#/components/schemas/Location'
+      required:
+        - origin
+        - destination
+    GoogleMapRoutingResp:
+      type: object
+      title: GoogleMapRoutingResp
+      properties:
+        result:
+          type: object
+      required:
+        - result
+    GoogleMapSearchReq:
+      type: object
+      title: GoogleMapSearchReq
+      properties:
+        languageCode:
+          type: string
+          default: en-US
+        location:
+          $ref: '#/components/schemas/Location'
+        query:
+          type: string
+        radius:
+          type: number
+          format: double
+          default: 100000
+      required:
+        - query
+        - languageCode
+        - radius
+    GoogleMapSearchResp:
+      type: object
+      title: GoogleMapSearchResp
+      properties:
+        isBrand:
+          type: boolean
+        places:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoogleMapPlace'
+      required:
+        - places
+        - isBrand
+    HRRouteDto:
+      type: object
+      title: HRRouteDto
+      properties:
+        fares:
+          $ref: '#/components/schemas/HRRouteMessageFareDto'
+        feature:
+          type: array
+          items:
+            type: string
+        interchangeStationsNo:
+          type: integer
+          format: int32
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/HRRouteMessageDto'
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/HRRoutePathDto'
+        promotions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PromotionDto'
+        routeName:
+          type: string
+        routeRemark:
+          type: string
+        routeStatus:
+          type: array
+          items:
+            type: string
+        rules:
+          type: string
+        special:
+          type: integer
+          format: int32
+        time:
+          type: number
+          format: float
+        walkingTime:
+          type: number
+          format: float
+    HRRouteMessageDto:
+      type: object
+      title: HRRouteMessageDto
+      properties:
+        banner:
+          type: integer
+          format: int32
+        bgColor:
+          type: string
+        fontColor:
+          type: string
+        fontSize:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        msgText:
+          type: string
+        url:
+          type: string
+        urlm:
+          type: string
+    HRRouteMessageFareClassDto:
+      type: object
+      title: HRRouteMessageFareClassDto
+      properties:
+        octopusAdult:
+          type: string
+        octopusConcession:
+          type: string
+        octopusConcessionChild:
+          type: string
+        octopusConcessionElderly:
+          type: string
+        octopusConcessionPwd:
+          type: string
+        octopusJoyYouSixty:
+          type: string
+        octopusStudent:
+          type: string
+        sjAdult:
+          type: string
+        sjConcession:
+          type: string
+        sjConcessionChild:
+          type: string
+        sjConcessionElderly:
+          type: string
+        sjConcessionPwd:
+          type: string
+        sjStudent:
+          type: string
+    HRRouteMessageFareDto:
+      type: object
+      title: HRRouteMessageFareDto
+      properties:
+        AEL:
+          $ref: '#/components/schemas/HRRouteMessageFareClassDto'
+        firstClass:
+          $ref: '#/components/schemas/HRRouteMessageFareClassDto'
+        standardClass:
+          $ref: '#/components/schemas/HRRouteMessageFareClassDto'
+    HRRoutePathDto:
+      type: object
+      title: HRRoutePathDto
+      properties:
+        DummyLine:
+          type: integer
+          format: int32
+        ID:
+          type: integer
+          format: int32
+        Track:
+          type: integer
+          format: int32
+        lineID:
+          type: integer
+          format: int32
+        linkStatus:
+          type: integer
+          format: int32
+        linkText:
+          type: string
+        linkType:
+          type: string
+        platform:
+          type: string
+        stationStatus:
+          type: integer
+          format: int32
+        time:
+          type: string
+        towards:
+          type: string
+    HsbcGetDepositRateResp:
+      type: object
+      title: HsbcGetDepositRateResp
+      properties:
+        data:
+          $ref: '#/components/schemas/DepositRate'
+      required:
+        - data
+    HsbcGetForexRatePromoResp:
+      type: object
+      title: HsbcGetForexRatePromoResp
+      properties:
+        promo_description:
+          type: array
+          items:
+            type: string
+        promo_note:
+          type: string
+        promo_title:
+          type: string
+      required:
+        - promo_title
+        - promo_description
+        - promo_note
+    HsbcGetTimeDepositResp:
+      type: object
+      title: HsbcGetTimeDepositResp
+      properties:
+        promo_description:
+          type: array
+          items:
+            type: string
+        promo_title:
+          type: string
+      required:
+        - promo_title
+        - promo_description
+    HsbcRecordTicketReq:
+      type: object
+      title: HsbcRecordTicketReq
+      properties:
+        branch_code:
+          type: string
+        language_code:
+          type: string
+          default: zh-HK
+      required:
+        - branch_code
+        - language_code
+    HsbcRecordTicketResp:
+      type: object
+      title: HsbcRecordTicketResp
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+    HsbcTicketTransactionStatisticReq:
+      type: object
+      title: HsbcTicketTransactionStatisticReq
+    HsbcTicketTransactionStatisticResp:
+      type: object
+      title: HsbcTicketTransactionStatisticResp
+      properties:
+        count:
+          type: integer
+          format: int32
+        ticket_type:
+          type: string
+      required:
+        - ticket_type
+        - count
+    IDDto:
+      type: object
+      title: IDDto
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    Item:
+      type: object
+      title: Item
+      properties:
+        code:
+          type: string
+        coord:
+          $ref: '#/components/schemas/Coord'
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/Detail'
+        is_end:
+          type: boolean
+        name:
+          type: string
+        postal_code:
+          type: string
+      required:
+        - code
+        - name
+        - postal_code
+        - coord
+        - details
+        - is_end
+    KFCItemApiResponseData:
+      type: object
+      title: KFCItemApiResponseData
+      properties:
+        Fcode:
+          type: string
+        category:
+          type: string
+        cname:
+          type: string
+        description:
+          type: string
+        img:
+          type: string
+        price:
+          type: integer
+          format: int16
+    KfcItemResp:
+      type: object
+      title: KfcItemResp
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/KFCItemApiResponseData'
+        foods:
+          type: array
+          items:
+            type: string
+      required:
+        - data
+        - foods
+    KfcMemberApiResponse:
+      type: object
+      title: KfcMemberApiResponse
+      properties:
+        address:
+          type: string
+        amount:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/KfcMemberApiResponseData'
+        datatype:
+          type: string
+          description: ' 1:外帶 2:外送'
+        imageurl:
+          type: string
+        orderid:
+          type: string
+        shopname:
+          type: string
+        status:
+          type: string
+        url:
+          type: string
+      required:
+        - status
+        - orderid
+        - url
+        - imageurl
+        - datatype
+        - shopname
+        - address
+        - amount
+        - data
+    KfcMemberApiResponseData:
+      type: object
+      title: KfcMemberApiResponseData
+      properties:
+        fcode:
+          type: string
+        name:
+          type: string
+      required:
+        - fcode
+        - name
+    KfcMemberReq:
+      type: object
+      title: KfcMemberReq
+      properties:
+        memberId:
+          type: string
+      required:
+        - memberId
+    KfcMemberResp:
+      type: object
+      title: KfcMemberResp
+      properties:
+        data:
+          $ref: '#/components/schemas/KfcMemberApiResponse'
+      required:
+        - data
+    KfcWeatherReq:
+      type: object
+      title: KfcWeatherReq
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required:
+        - latitude
+        - longitude
+    KfcWeatherResp:
+      type: object
+      title: KfcWeatherResp
+      properties:
+        datetime:
+          type: string
+        description:
+          type: string
+        humidity:
+          type: string
+        temperature:
+          type: string
+      required:
+        - datetime
+        - description
+        - temperature
+        - humidity
+    LRRouteDto:
+      type: object
+      title: LRRouteDto
+      properties:
+        interchangeStationsNo:
+          type: integer
+          format: int32
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/LRRoutePathDto'
+        routeName:
+          type: string
+        time:
+          type: string
+    LRRoutePathDto:
+      type: object
+      title: LRRoutePathDto
+      properties:
+        ID:
+          type: string
+        linkType:
+          type: string
+        step:
+          type: array
+          items:
+            $ref: '#/components/schemas/LRRoutePathStepDto'
+        time:
+          type: string
+    LRRoutePathStepDto:
+      type: object
+      title: LRRoutePathStepDto
+      properties:
+        lineID:
+          type: string
+        linkText:
+          type: string
+        platform:
+          type: string
+        towards:
+          type: string
+        towardsStationName:
+          type: string
+        track:
+          type: string
+    ListAudioVoiceReq:
+      type: object
+      title: ListAudioVoiceReq
+    ListAudioVoiceResp:
+      type: object
+      title: ListAudioVoiceResp
+      properties:
+        voices:
+          type: array
+          items:
+            $ref: '#/components/schemas/AudioVoice'
+      required:
+        - voices
+    ListModelActionsReq:
+      type: object
+      title: ListModelActionsReq
+      properties:
+        use_embedded:
+          type: boolean
+          default: false
+      required:
+        - use_embedded
+    ListModelActionsResp:
+      type: object
+      title: ListModelActionsResp
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelAction'
+      required:
+        - data
+    Location:
+      type: object
+      title: Location
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required:
+        - latitude
+        - longitude
+    MailAlertReq:
+      type: object
+      title: MailAlertReq
+      properties:
+        content:
+          type: string
+        name:
+          type: string
+        orgId:
+          type: string
+        subject:
+          type: string
+      required:
+        - name
+        - orgId
+        - subject
+        - content
+    MailAlertResp:
+      type: object
+      title: MailAlertResp
+      properties:
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - returnCode
+        - message
+    MbedRoom:
+      type: object
+      title: MbedRoom
+      properties:
+        mbed_room:
+          type: string
+          nullable: true
+        original:
+          type: string
+          nullable: true
+        range:
+          type: string
+          nullable: true
+    MediaMedia:
+      type: object
+      title: MediaMedia
+      properties:
+        content:
+          type: string
+        format:
+          type: string
+        type:
+          type: string
+      required:
+        - type
+        - format
+        - content
+    MediaText:
+      type: object
+      title: MediaText
+      properties:
+        content:
+          type: string
+        format:
+          type: string
+          default: default
+        language_code:
+          type: string
+        type:
+          type: string
+          default: text
+      required:
+        - type
+        - format
+        - language_code
+        - content
+    MessageDto:
+      type: object
+      title: MessageDto
+      properties:
+        action:
+          type: string
+        agent_background_en:
+          type: string
+        agent_background_zh:
+          type: string
+        attachment:
+          $ref: '#/components/schemas/AttachmentDto'
+        button_cancel_text:
+          type: string
+        button_confirm_text:
+          type: string
+        callCenter:
+          type: string
+        carousel:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarouselDto'
+        fallback_message:
+          type: string
+        gesture:
+          type: string
+        html:
+          type: string
+        image:
+          type: string
+        payload:
+          $ref: '#/components/schemas/MessagePayloadDto'
+        project_id:
+          type: string
+        query:
+          type: string
+        quick_replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuickReplyDto'
+        route:
+          $ref: '#/components/schemas/RouteDto'
+        skipLipSync:
+          type: boolean
+        text:
+          type: string
+        type:
+          type: string
+    MessagePayloadDto:
+      type: object
+      title: MessagePayloadDto
+      properties:
+        intent_survey_quick_replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuickReplyDto'
+        intent_survey_text:
+          type: string
+    MidlandDialogFlowReq:
+      type: object
+      title: MidlandDialogFlowReq
+      properties:
+        languageCode:
+          type: string
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - sessionInfo
+        - languageCode
+    MidlandDialogFlowResp:
+      type: object
+      title: MidlandDialogFlowResp
+      properties:
+        fulfillmentResponse:
+          $ref: '#/components/schemas/FulfillmentResponse'
+        payload:
+          $ref: '#/components/schemas/DialogFlowRespPayload'
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - fulfillmentResponse
+        - sessionInfo
+        - payload
+    ModelAction:
+      type: object
+      title: ModelAction
+      properties:
+        actions:
+          type: array
+          items:
+            type: string
+        gender:
+          type: string
+          nullable: true
+        model_id:
+          type: string
+      required:
+        - model_id
+        - actions
+    MtrMailAlertReq:
+      type: object
+      title: MtrMailAlertReq
+      properties:
+        content:
+          type: string
+        subject:
+          type: string
+      required:
+        - subject
+        - content
+    MtrMailAlertResp:
+      type: object
+      title: MtrMailAlertResp
+      properties:
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - returnCode
+        - message
+    MtrProxyCreateNotificationReq:
+      type: object
+      title: MtrProxyCreateNotificationReq
+      properties:
+        action:
+          type: string
+        content:
+          type: string
+        function:
+          type: array
+          items:
+            type: string
+        level:
+          type: integer
+          format: int32
+        selection:
+          type: array
+          items:
+            $ref: '#/components/schemas/MtrProxyCreateNotificationSelection'
+        source:
+          type: string
+        time:
+          type: string
+        title:
+          type: string
+      required:
+        - action
+        - level
+        - title
+        - content
+        - source
+        - function
+        - selection
+        - time
+    MtrProxyCreateNotificationResp:
+      type: object
+      title: MtrProxyCreateNotificationResp
+      properties:
+        message:
+          type: string
+        notiId:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - returnCode
+        - notiId
+        - message
+    MtrProxyCreateNotificationSelection:
+      type: object
+      title: MtrProxyCreateNotificationSelection
+      properties:
+        email:
+          type: string
+        location:
+          type: string
+        station:
+          type: string
+      required:
+        - station
+        - location
+        - email
+    MtrProxyDeleteNotificationReq:
+      type: object
+      title: MtrProxyDeleteNotificationReq
+      properties:
+        action:
+          type: string
+        notiId:
+          type: string
+        time:
+          type: string
+      required:
+        - action
+        - notiId
+        - time
+    MtrProxyDeleteNotificationResp:
+      type: object
+      title: MtrProxyDeleteNotificationResp
+      properties:
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - returnCode
+        - message
+    MtrProxyNextTrain:
+      type: object
+      title: MtrProxyNextTrain
+      properties:
+        DOWN:
+          type: array
+          items:
+            $ref: '#/components/schemas/MtrProxyNextTrainUpDown'
+        UP:
+          type: array
+          items:
+            $ref: '#/components/schemas/MtrProxyNextTrainUpDown'
+        curr_time:
+          type: string
+        isPaxLoadEnabled:
+          type: string
+        sys_time:
+          type: string
+      required:
+        - curr_time
+        - sys_time
+        - isPaxLoadEnabled
+        - UP
+        - DOWN
+    MtrProxyNextTrainPayload:
+      type: object
+      title: MtrProxyNextTrainPayload
+      properties:
+        availability:
+          type: string
+        car:
+          type: string
+      required:
+        - availability
+        - car
+    MtrProxyNextTrainReq:
+      type: object
+      title: MtrProxyNextTrainReq
+      properties:
+        lang:
+          type: string
+          default: zh
+        line:
+          type: string
+        sta:
+          type: string
+      required:
+        - line
+        - sta
+        - lang
+    MtrProxyNextTrainResp:
+      type: object
+      title: MtrProxyNextTrainResp
+      properties:
+        curr_time:
+          type: string
+        data:
+          type: object
+          description: ' key is line-station code e.g. ''EAL-SHT'''
+          additionalProperties:
+            $ref: '#/components/schemas/MtrProxyNextTrain'
+        message:
+          type: string
+        resultCode:
+          type: integer
+          format: int32
+        status:
+          type: integer
+          format: int32
+        sys_time:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - sys_time
+        - curr_time
+        - data
+        - resultCode
+        - timestamp
+        - status
+        - message
+    MtrProxyNextTrainUpDown:
+      type: object
+      title: MtrProxyNextTrainUpDown
+      properties:
+        dest:
+          type: string
+        length:
+          type: string
+        paxLoad:
+          type: array
+          items:
+            $ref: '#/components/schemas/MtrProxyNextTrainPayload'
+        plat:
+          type: string
+        route:
+          type: string
+        seq:
+          type: string
+        source:
+          type: string
+        time:
+          type: string
+        timeType:
+          type: string
+        ttnt:
+          type: string
+        valid:
+          type: string
+      required:
+        - seq
+        - dest
+        - plat
+        - time
+        - ttnt
+        - valid
+        - source
+        - route
+        - timeType
+        - length
+    MtrTtpHrRouteReq:
+      type: object
+      title: MtrTtpHrRouteReq
+      properties:
+        d:
+          type: string
+        lang:
+          type: string
+        o:
+          type: string
+      required:
+        - o
+        - d
+        - lang
+    MtrTtpHrRouteResp:
+      type: object
+      title: MtrTtpHrRouteResp
+      properties:
+        errorCode:
+          type: string
+        errorMsg:
+          type: string
+        firstLastTrainRemark:
+          type: string
+        firstTrain:
+          $ref: '#/components/schemas/MtrTtpHrRouteTrain'
+        lastTrain:
+          $ref: '#/components/schemas/MtrTtpHrRouteTrain'
+        routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/HRRouteDto'
+        stationOpeningHours:
+          type: string
+        tnc:
+          type: string
+      required:
+        - errorCode
+        - errorMsg
+        - stationOpeningHours
+        - firstTrain
+        - lastTrain
+        - firstLastTrainRemark
+        - tnc
+        - routes
+    MtrTtpHrRouteTrain:
+      type: object
+      title: MtrTtpHrRouteTrain
+      properties:
+        interchange:
+          type: object
+        links:
+          type: array
+          items:
+            type: string
+        time:
+          type: string
+      required:
+        - time
+        - interchange
+        - links
+    MtrTtpLrRouteResp:
+      type: object
+      title: MtrTtpLrRouteResp
+      properties:
+        errorCode:
+          type: integer
+          format: int32
+        errorMsg:
+          type: string
+        fares:
+          $ref: '#/components/schemas/HRRouteMessageFareClassDto'
+        firstLastTrainRemark:
+          type: string
+        firstTrain:
+          $ref: '#/components/schemas/MtrTtpLrTrain'
+        lastTrain:
+          $ref: '#/components/schemas/MtrTtpLrTrain'
+        routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LRRouteDto'
+        tnc:
+          type: string
+      required:
+        - errorCode
+        - errorMsg
+        - fares
+        - firstTrain
+        - lastTrain
+        - firstLastTrainRemark
+        - tnc
+        - routes
+    MtrTtpLrTrain:
+      type: object
+      title: MtrTtpLrTrain
+      properties:
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/MtrTtpLrTrainPath'
+        time:
+          type: string
+      required:
+        - time
+        - path
+    MtrTtpLrTrainPath:
+      type: object
+      title: MtrTtpLrTrainPath
+      properties:
+        ID:
+          type: string
+        lineID:
+          type: string
+        platform:
+          type: string
+        towards:
+          type: string
+      required:
+        - ID
+        - towards
+        - platform
+        - lineID
+    NavitimeMapSearchReq:
+      type: object
+      title: NavitimeMapSearchReq
+      properties:
+        languageCode:
+          type: string
+          default: en
+        location:
+          $ref: '#/components/schemas/Location'
+        query:
+          type: string
+        radius:
+          type: number
+          format: double
+          default: 100000
+      required:
+        - query
+        - radius
+        - languageCode
+    NavitimeMapSearchResp:
+      type: object
+      title: NavitimeMapSearchResp
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        unit:
+          $ref: '#/components/schemas/Unit'
+      required:
+        - items
+        - unit
+    NetArea:
+      type: object
+      title: NetArea
+      properties:
+        net_area:
+          type: string
+          nullable: true
+        original:
+          type: string
+          nullable: true
+        range:
+          type: string
+          default: Equal
+    NetFtPrice:
+      type: object
+      title: NetFtPrice
+      properties:
+        net_ft_price:
+          type: string
+          nullable: true
+        original:
+          type: string
+          nullable: true
+        range:
+          type: string
+          default: Equal
+    NewCatalogClickTransactionReq:
+      type: object
+      title: NewCatalogClickTransactionReq
+      properties:
+        catalog_id:
+          type: string
+        language_code:
+          type: string
+      required:
+        - catalog_id
+        - language_code
+    NewClientMessageRequest:
+      type: object
+      title: NewClientMessageRequest
+      properties:
+        gesture:
+          type: string
+          default: default
+        language_code:
+          type: string
+          default: en-US
+        return_url:
+          type: string
+        session_name:
+          type: string
+        skipAudioRender:
+          type: boolean
+          default: true
+        skipVideoRender:
+          type: boolean
+          default: true
+        text_content:
+          type: string
+      required:
+        - session_name
+        - text_content
+        - language_code
+        - skipAudioRender
+        - skipVideoRender
+        - gesture
+    NewClientMessageResp:
+      type: object
+      title: NewClientMessageResp
+      properties:
+        audioStatus:
+          type: string
+        audioUrl:
+          type: string
+        clientId:
+          type: string
+        createdAt:
+          type: integer
+          format: int64
+        credit:
+          type: integer
+          format: int32
+        details:
+          type: object
+        displayText:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaText'
+        displayTextHash:
+          type: string
+        id:
+          type: string
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaMedia'
+        profileId:
+          type: string
+        requestId:
+          type: string
+        role:
+          type: string
+        sessionId:
+          type: string
+        updatedAt:
+          type: integer
+          format: int64
+        videoStatus:
+          type: string
+        videoUrl:
+          type: string
+        voiceText:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaText'
+        voiceTextHash:
+          type: string
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - sessionId
+        - profileId
+        - role
+        - credit
+        - displayText
+        - voiceText
+        - media
+        - details
+        - clientId
+    NewClientSessionReq:
+      type: object
+      title: NewClientSessionReq
+      properties:
+        client_name:
+          type: string
+        end_original_session:
+          type: boolean
+          default: true
+      required:
+        - client_name
+        - end_original_session
+    NewClientSessionResp:
+      type: object
+      title: NewClientSessionResp
+      properties:
+        session:
+          $ref: '#/components/schemas/ChatSession'
+          nullable: true
+        success:
+          type: boolean
+      required:
+        - success
+    NewFlexibleRequest:
+      type: object
+      title: NewFlexibleRequest
+      properties:
+        gesture:
+          type: string
+        model_gesture_start_time:
+          type: number
+          format: float
+        model_id:
+          type: string
+        profile_id:
+          type: string
+        provider:
+          type: string
+        text_content:
+          type: string
+        token:
+          type: string
+        voice_id:
+          type: string
+        voice_language_code:
+          type: string
+        voice_pitch:
+          type: string
+        voice_speed:
+          type: string
+      required:
+        - voice_id
+        - model_id
+        - text_content
+        - voice_language_code
+        - provider
+    NewRenderRequest:
+      type: object
+      title: NewRenderRequest
+      properties:
+        gesture:
+          type: string
+        language_code:
+          type: string
+        profile_id:
+          type: string
+        ref_id:
+          type: string
+        skipAudioRender:
+          type: boolean
+          default: false
+        skipVideoRender:
+          type: boolean
+          default: false
+        text_content:
+          type: string
+        token:
+          type: string
+      required:
+        - text_content
+        - language_code
+        - skipAudioRender
+        - skipVideoRender
+    OauthRequest:
+      type: object
+      title: OauthRequest
+      properties:
+        redirect:
+          type: string
+    OauthShopifyReq:
+      type: object
+      title: OauthShopifyReq
+      properties:
+        shop:
+          type: string
+      required:
+        - shop
+    OneMapPlace:
+      type: object
+      title: OneMapPlace
+      properties:
+        ADDRESS:
+          type: string
+        BLK_NO:
+          type: string
+        BUILDING:
+          type: string
+        LATITUDE:
+          type: string
+        LONGITUDE:
+          type: string
+        POSTAL:
+          type: string
+        ROAD_NAME:
+          type: string
+        SEARCHVAL:
+          type: string
+        X:
+          type: string
+        "Y":
+          type: string
+      required:
+        - ADDRESS
+        - BLK_NO
+        - BUILDING
+        - LATITUDE
+        - LONGITUDE
+        - POSTAL
+        - ROAD_NAME
+        - SEARCHVAL
+        - X
+        - "Y"
+    OneMapRoutingReq:
+      type: object
+      title: OneMapRoutingReq
+      properties:
+        date:
+          type: string
+        end:
+          type: string
+        mode:
+          type: string
+          enum:
+            - TRANSIT
+            - BUS
+            - RAIL
+        routeType:
+          type: string
+          enum:
+            - drive
+            - walk
+            - pt
+            - cycle
+          default: drive
+        start:
+          type: string
+        time:
+          type: string
+      required:
+        - start
+        - end
+        - routeType
+    OneMapRoutingResp:
+      type: object
+      title: OneMapRoutingResp
+      properties:
+        result:
+          type: object
+      required:
+        - result
+    OneMapSearch:
+      type: object
+      title: OneMapSearch
+      properties:
+        found:
+          type: integer
+          format: int32
+        pageNum:
+          type: integer
+          format: int32
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OneMapPlace'
+        totalNumPages:
+          type: integer
+          format: int32
+      required:
+        - found
+        - pageNum
+        - results
+        - totalNumPages
+    OneMapSearchReq:
+      type: object
+      title: OneMapSearchReq
+      properties:
+        pageNum:
+          type: integer
+          format: int32
+          default: 1
+        searchVal:
+          type: string
+      required:
+        - searchVal
+        - pageNum
+    OneMapSearchResp:
+      type: object
+      title: OneMapSearchResp
+      properties:
+        result:
+          $ref: '#/components/schemas/OneMapSearch'
+      required:
+        - result
+    OrgRoleStatus:
+      type: object
+      title: OrgRoleStatus
+      properties:
+        orgId:
+          type: string
+        orgName:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+      required:
+        - role
+        - status
+        - orgName
+        - orgId
+    OthersRoom:
+      type: object
+      title: OthersRoom
+      properties:
+        original:
+          type: string
+          nullable: true
+        others_room:
+          type: string
+          nullable: true
+        range:
+          type: string
+          nullable: true
+    PayloadDto:
+      type: object
+      title: PayloadDto
+      properties:
+        buttons:
+          type: array
+          items:
+            $ref: '#/components/schemas/ButtonDto'
+        template_type:
+          type: string
+        text:
+          type: string
+      required:
+        - template_type
+        - text
+        - buttons
+    PoiDto:
+      type: object
+      title: PoiDto
+      properties:
+        ID:
+          type: integer
+          format: int32
+        address:
+          type: string
+        coordinate:
+          type: string
+        isSignage:
+          type: boolean
+        name:
+          type: string
+        originName:
+          type: string
+        originStationID:
+          type: integer
+          format: int32
+        stationExit:
+          type: string
+        stationExitCoordinate:
+          type: string
+        stationID:
+          type: integer
+          format: int32
+        stationName:
+          type: string
+        type:
+          type: string
+    Price:
+      type: object
+      title: Price
+      properties:
+        original:
+          type: string
+          nullable: true
+        price:
+          type: string
+          nullable: true
+        range:
+          type: string
+          default: Equal
+    ProjectAvatar:
+      type: object
+      title: ProjectAvatar
+      properties:
+        enabled:
+          type: boolean
+        id:
+          type: string
+        name:
+          type: string
+        profileId:
+          type: string
+        project:
+          type: string
+        token:
+          type: string
+      required:
+        - id
+        - project
+        - profileId
+        - token
+        - name
+        - enabled
+    ProjectKioskConfig:
+      type: object
+      title: ProjectKioskConfig
+      properties:
+        created_at:
+          type: integer
+          format: int64
+        enabled:
+          type: boolean
+        id:
+          type: string
+        kioskId:
+          type: string
+        language_code:
+          type: string
+        profileId:
+          type: string
+        profileName:
+          type: string
+        project:
+          type: string
+        token:
+          type: string
+        updated_at:
+          type: integer
+          format: int64
+      required:
+        - id
+        - created_at
+        - updated_at
+        - project
+        - kioskId
+        - language_code
+        - token
+        - profileId
+        - profileName
+        - enabled
+    PromotionDto:
+      type: object
+      title: PromotionDto
+      properties:
+        discount:
+          type: string
+        link:
+          type: string
+        title:
+          type: string
+    QuickReplyDto:
+      type: object
+      title: QuickReplyDto
+      properties:
+        content_type:
+          type: string
+        payload:
+          type: string
+        title:
+          type: string
+      required:
+        - content_type
+        - title
+        - payload
+    QwenSttWebsocketLangReq:
+      type: object
+      title: QwenSttWebsocketLangReq
+    RateRow:
+      type: object
+      title: RateRow
+      properties:
+        period:
+          type: string
+        tiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TierRate'
+      required:
+        - period
+        - tiers
+    RefreshTokenReq:
+      type: object
+      title: RefreshTokenReq
+      properties:
+        refreshToken:
+          type: string
+      required:
+        - refreshToken
+    RefreshTokenResp:
+      type: object
+      title: RefreshTokenResp
+      properties:
+        token:
+          type: string
+      required:
+        - token
+    RegisterDeviceReq:
+      type: object
+      title: RegisterDeviceReq
+      properties:
+        roomId:
+          type: string
+      required:
+        - roomId
+    RegisterDeviceResp:
+      type: object
+      title: RegisterDeviceResp
+      properties:
+        clientId:
+          type: string
+      required:
+        - clientId
+    RenderRequest:
+      type: object
+      title: RenderRequest
+      properties:
+        audio_finish_at:
+          type: integer
+          format: int64
+        audio_path:
+          type: string
+        audio_start_at:
+          type: integer
+          format: int64
+        audio_status:
+          type: string
+        audio_url:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        display_text:
+          type: string
+        display_text_hash:
+          type: string
+        id:
+          type: string
+        message:
+          type: string
+        message_id:
+          type: string
+        profile_id:
+          type: string
+        ref_id:
+          type: string
+        request_finish_at:
+          type: integer
+          format: int64
+        request_start_at:
+          type: integer
+          format: int64
+        request_status:
+          type: string
+        session_id:
+          type: string
+        updated_at:
+          type: integer
+          format: int64
+        video_finish_at:
+          type: integer
+          format: int64
+        video_path:
+          type: string
+        video_start_at:
+          type: integer
+          format: int64
+        video_status:
+          type: string
+        video_url:
+          type: string
+        voice_text:
+          type: string
+        voice_text_hash:
+          type: string
+      required:
+        - id
+        - created_at
+        - updated_at
+        - ref_id
+        - profile_id
+        - audio_status
+        - video_status
+        - request_status
+    RouteDto:
+      type: object
+      title: RouteDto
+      properties:
+        CompleteRoute:
+          $ref: '#/components/schemas/CompleteRouteDto'
+        HRRoute:
+          $ref: '#/components/schemas/HRRouteDto'
+        LRRoute:
+          $ref: '#/components/schemas/LRRouteDto'
+        Poi:
+          $ref: '#/components/schemas/PoiDto'
+    SbsTransitNews:
+      type: object
+      title: SbsTransitNews
+      properties:
+        date:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+      required:
+        - title
+        - url
+        - date
+    SbsTransitNewsResp:
+      type: object
+      title: SbsTransitNewsResp
+      properties:
+        news:
+          type: array
+          items:
+            $ref: '#/components/schemas/SbsTransitNews'
+      required:
+        - news
+    ScheduleDatetime:
+      type: object
+      title: ScheduleDatetime
+      properties:
+        dateTime:
+          type: string
+        timeZone:
+          type: string
+      required:
+        - dateTime
+        - timeZone
+    ScheduleItem:
+      type: object
+      title: ScheduleItem
+      properties:
+        end:
+          $ref: '#/components/schemas/ScheduleDatetime'
+        start:
+          $ref: '#/components/schemas/ScheduleDatetime'
+        status:
+          type: string
+        subject:
+          type: string
+      required:
+        - status
+        - start
+        - end
+        - subject
+    SessionInfo:
+      type: object
+      title: SessionInfo
+      properties:
+        parameters:
+          type: object
+        session:
+          type: string
+      required:
+        - session
+        - parameters
+    SetsailChatResponseDto:
+      type: object
+      title: SetsailChatResponseDto
+      properties:
+        chatbot_id:
+          type: string
+        details:
+          $ref: '#/components/schemas/DetailsDto'
+        message:
+          $ref: '#/components/schemas/MessageDto'
+        recipient:
+          $ref: '#/components/schemas/IDDto'
+        sender:
+          $ref: '#/components/schemas/IDDto'
+        timestamp:
+          type: integer
+          format: int64
+      required:
+        - timestamp
+        - chatbot_id
+        - recipient
+        - sender
+        - message
+        - details
+    SetsailUpdateStationProfileReq:
+      type: object
+      title: SetsailUpdateStationProfileReq
+      properties:
+        lang:
+          type: string
+        stationName:
+          type: string
+        token:
+          type: string
+      required:
+        - token
+        - stationName
+        - lang
+    SetsailUpdateStationProfileResp:
+      type: object
+      title: SetsailUpdateStationProfileResp
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+      required:
+        - success
+        - message
+    ShopifyAuthorizedReq:
+      type: object
+      title: ShopifyAuthorizedReq
+      properties:
+        code:
+          type: string
+        hmac:
+          type: string
+        shop:
+          type: string
+      required:
+        - code
+        - hmac
+        - shop
+    SignInDto:
+      type: object
+      title: SignInDto
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        profileId:
+          type: string
+        subpath:
+          type: string
+      required:
+        - email
+        - password
+        - hash
+    SignInRes:
+      type: object
+      title: SignInRes
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+        isActive:
+          type: boolean
+        isVerified:
+          type: boolean
+        name:
+          type: string
+        orgRole:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgRoleStatus'
+        refreshToken:
+          type: string
+        role:
+          type: string
+        token:
+          type: string
+        url:
+          type: string
+      required:
+        - url
+        - token
+        - refreshToken
+        - id
+        - email
+        - name
+        - role
+        - orgRole
+        - isActive
+        - isVerified
+    SignUpDto:
+      type: object
+      title: SignUpDto
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+        - name
+    SignUpRes:
+      type: object
+      title: SignUpRes
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - email
+        - name
+    SingpoolUpsertLotteryRecordReq:
+      type: object
+      title: SingpoolUpsertLotteryRecordReq
+      properties:
+        employee:
+          type: string
+        lottery_numbers:
+          type: array
+          items:
+            type: integer
+            format: int32
+      required:
+        - employee
+        - lottery_numbers
+    SingpoolUpsertLotteryRecordResp:
+      type: object
+      title: SingpoolUpsertLotteryRecordResp
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+      required:
+        - success
+        - message
+    SingpostCheckout:
+      type: object
+      title: SingpostCheckout
+      properties:
+        amount:
+          type: number
+          format: float
+        details:
+          type: object
+        id:
+          type: string
+        kioskId:
+          type: string
+        kioskMessage:
+          type: string
+        kioskReceiveStatus:
+          type: string
+        merchantReferenceId:
+          type: string
+        paymentStatus:
+          type: string
+        sessionId:
+          type: string
+        status:
+          type: string
+      required:
+        - id
+        - amount
+        - merchantReferenceId
+        - status
+        - sessionId
+        - kioskId
+        - paymentStatus
+        - kioskReceiveStatus
+        - kioskMessage
+        - details
+    SingpostDialogFlowReq:
+      type: object
+      title: SingpostDialogFlowReq
+      properties:
+        languageCode:
+          type: string
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - sessionInfo
+        - languageCode
+    SingpostDialogFlowResp:
+      type: object
+      title: SingpostDialogFlowResp
+      properties:
+        fulfillmentResponse:
+          $ref: '#/components/schemas/FulfillmentResponse'
+        payload:
+          $ref: '#/components/schemas/DialogFlowRespPayload'
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - fulfillmentResponse
+        - sessionInfo
+        - payload
+    SingpostGetPaymentStatusReq:
+      type: object
+      title: SingpostGetPaymentStatusReq
+    SingpostKioskUpdateStatusReq:
+      type: object
+      title: SingpostKioskUpdateStatusReq
+      properties:
+        kioskMessage:
+          type: string
+        kioskReceiveStatus:
+          type: string
+      required:
+        - kioskReceiveStatus
+        - kioskMessage
+    TierRate:
+      type: object
+      title: TierRate
+      properties:
+        rate:
+          type: string
+        tier:
+          type: string
+      required:
+        - tier
+        - rate
+    ToyotaDialogFlowReq:
+      type: object
+      title: ToyotaDialogFlowReq
+      properties:
+        languageCode:
+          type: string
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - sessionInfo
+        - languageCode
+    ToyotaDialogFlowResp:
+      type: object
+      title: ToyotaDialogFlowResp
+      properties:
+        fulfillmentResponse:
+          $ref: '#/components/schemas/FulfillmentResponse'
+        payload:
+          $ref: '#/components/schemas/DialogFlowRespPayload'
+        sessionInfo:
+          $ref: '#/components/schemas/SessionInfo'
+      required:
+        - fulfillmentResponse
+        - sessionInfo
+        - payload
+    Unit:
+      type: object
+      title: Unit
+      properties:
+        coord_unit:
+          type: string
+        datum:
+          type: string
+      required:
+        - datum
+        - coord_unit
+    UpdateProjectKioskConfigReq:
+      type: object
+      title: UpdateProjectKioskConfigReq
+      properties:
+        enabled:
+          type: boolean
+          default: true
+        language_code:
+          type: string
+        token:
+          type: string
+      required:
+        - token
+    UpdateProjectKioskConfigResp:
+      type: object
+      title: UpdateProjectKioskConfigResp
+      properties:
+        data:
+          $ref: '#/components/schemas/ProjectKioskConfig'
+        message:
+          type: string
+        success:
+          type: boolean
+      required:
+        - data
+        - success
+        - message
+    UploadReq:
+      type: object
+      title: UploadReq
+      properties:
+        file:
+          type: string
+        path:
+          type: string
+    UploadResp:
+      type: object
+      title: UploadResp
+      properties:
+        full_url:
+          type: string
+        msg:
+          type: string
+        url:
+          type: string
+      required:
+        - msg
+        - url
+        - full_url
+    UpsertDialogflowEntityReq:
+      type: object
+      title: UpsertDialogflowEntityReq
+      properties:
+        agent:
+          $ref: '#/components/schemas/AgentLocation'
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityType_Entity'
+        entityTypeName:
+          type: string
+      required:
+        - agent
+        - entityTypeName
+        - entities
+    UpsertDialogflowEntityResp:
+      type: object
+      title: UpsertDialogflowEntityResp
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+    UserAuthMagicLinkRequestReq:
+      type: object
+      title: UserAuthMagicLinkRequestReq
+      properties:
+        email:
+          type: string
+      required:
+        - email
+    UserAuthMagicLinkRequestResp:
+      type: object
+      title: UserAuthMagicLinkRequestResp
+      properties:
+        challengeId:
+          type: string
+        expiresInSeconds:
+          type: integer
+          format: int64
+      required:
+        - challengeId
+        - expiresInSeconds
+    UserAuthMagicLinkStreamReq:
+      type: object
+      title: UserAuthMagicLinkStreamReq
+      properties:
+        challengeId:
+          type: string
+      required:
+        - challengeId
+    UserAuthMagicLinkStreamResp:
+      type: object
+      title: UserAuthMagicLinkStreamResp
+      properties:
+        event:
+          type: string
+        message:
+          type: string
+      required:
+        - event
+    UserAuthMagicLinkVerifyReq:
+      type: object
+      title: UserAuthMagicLinkVerifyReq
+      properties:
+        token:
+          type: string
+      required:
+        - token
+    UserAuthMagicLinkVerifyResp:
+      type: object
+      title: UserAuthMagicLinkVerifyResp
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+      required:
+        - success
+        - message
+    UserCredit:
+      type: object
+      title: UserCredit
+      properties:
+        total:
+          type: integer
+          format: int32
+        used:
+          type: integer
+          format: int32
+      required:
+        - used
+        - total
+    UserData:
+      type: object
+      title: UserData
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+        is_active:
+          type: boolean
+        is_verified:
+          type: boolean
+        locale:
+          type: string
+        name:
+          type: string
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfile'
+      required:
+        - id
+        - email
+        - name
+        - locale
+        - is_active
+        - is_verified
+        - profiles
+    UserDataReq:
+      type: object
+      title: UserDataReq
+    UserProfile:
+      type: object
+      title: UserProfile
+      properties:
+        details:
+          type: object
+          description: ' from profile table'
+        is_active:
+          type: boolean
+        name:
+          type: string
+          description: ' from profile table'
+        permission:
+          type: string
+        profile_id:
+          type: string
+      required:
+        - profile_id
+        - name
+        - details
+        - permission
+        - is_active
+    ValidateUserAuthOtpReq:
+      type: object
+      title: ValidateUserAuthOtpReq
+      properties:
+        otpCode:
+          type: string
+      required:
+        - otpCode
+    ValidateUserAuthOtpResp:
+      type: object
+      title: ValidateUserAuthOtpResp
+      properties:
+        isValid:
+          type: boolean
+      required:
+        - isValid
+    VideoLookup:
+      type: object
+      title: VideoLookup
+      properties:
+        available:
+          type: boolean
+          nullable: true
+        cacheId:
+          type: string
+          nullable: true
+        id:
+          type: string
+        model_action_hash:
+          type: string
+        model_config_hash:
+          type: string
+          nullable: true
+        ttl:
+          type: integer
+          format: int32
+          nullable: true
+        videoBucket:
+          type: string
+          nullable: true
+        videoPath:
+          type: string
+          nullable: true
+      required:
+        - id
+        - model_action_hash
+    VideoLookupCreateReq:
+      type: object
+      title: VideoLookupCreateReq
+      properties:
+        cacheId:
+          type: string
+          nullable: true
+        hash:
+          type: string
+        ttl:
+          type: integer
+          format: int32
+          nullable: true
+        videoBucket:
+          type: string
+        videoPath:
+          type: string
+      required:
+        - hash
+        - videoBucket
+        - videoPath
+    VideoLookupCreateResp:
+      type: object
+      title: VideoLookupCreateResp
+      properties:
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+        videoLookup:
+          $ref: '#/components/schemas/VideoLookup'
+      required:
+        - returnCode
+        - message
+        - videoLookup
+    VideoLookupDeleteCacheReq:
+      type: object
+      title: VideoLookupDeleteCacheReq
+    VideoLookupDeleteCacheResp:
+      type: object
+      title: VideoLookupDeleteCacheResp
+      properties:
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - returnCode
+        - message
+    VideoLookupDeleteReq:
+      type: object
+      title: VideoLookupDeleteReq
+    VideoLookupDeleteResp:
+      type: object
+      title: VideoLookupDeleteResp
+      properties:
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - returnCode
+        - message
+    VideoLookupGetByHashReq:
+      type: object
+      title: VideoLookupGetByHashReq
+    VideoLookupGetByHashResp:
+      type: object
+      title: VideoLookupGetByHashResp
+      properties:
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+        videoLookup:
+          $ref: '#/components/schemas/VideoLookup'
+      required:
+        - returnCode
+        - message
+        - videoLookup
+    VideoLookupListByCacheIdReq:
+      type: object
+      title: VideoLookupListByCacheIdReq
+    VideoLookupListByCacheIdResp:
+      type: object
+      title: VideoLookupListByCacheIdResp
+      properties:
+        message:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoLookup'
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - nodes
+        - returnCode
+        - message
+    VideoLookupListCacheIdResp:
+      type: object
+      title: VideoLookupListCacheIdResp
+      properties:
+        cacheIds:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
+        returnCode:
+          type: integer
+          format: int32
+      required:
+        - cacheIds
+        - returnCode
+        - message
+    ViuGetQuotaReq:
+      type: object
+      title: ViuGetQuotaReq
+      properties:
+        token:
+          type: string
+      required:
+        - token
+    ViuGetQuotaResp:
+      type: object
+      title: ViuGetQuotaResp
+      properties:
+        has_chatbot_quota:
+          type: boolean
+        max_session_count:
+          type: integer
+          format: int32
+        used_session_count:
+          type: integer
+          format: int32
+      required:
+        - has_chatbot_quota
+        - max_session_count
+        - used_session_count
+    WeatherResp:
+      type: object
+      title: WeatherResp
+      properties:
+        message:
+          type: string
+        result:
+          type: object
+        success:
+          type: boolean
+      required:
+        - success
+        - message
+        - result
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      description: API key authentication via x-api-key header
+      name: x-api-key
+      in: header
+    bearerAuth:
+      type: http
+      description: Enter JWT Bearer token
+      scheme: bearer
+      bearerFormat: JWT
+  requestBodies:
+    MtrMailAlertReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MtrMailAlertReq'
+    NewClientMessageRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewClientMessageRequest'
+    NewFlexibleRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewFlexibleRequest'
+    NewRenderRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewRenderRequest'
+    OneMapSearchReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OneMapSearchReq'
+    SingpostDialogFlowReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SingpostDialogFlowReq'
+    ToyotaDialogFlowReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ToyotaDialogFlowReq'
+    UploadReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UploadReq'
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/UploadReq'
+    UserAuthMagicLinkVerifyReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserAuthMagicLinkVerifyReq'
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/UserAuthMagicLinkVerifyReq'

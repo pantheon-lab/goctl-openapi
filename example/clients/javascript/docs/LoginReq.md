@@ -1,9 +1,10 @@
-# SwaggerJsClient.LoginReq
+# TypeTitleHere.LoginReq
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**username** | **String** |  | [optional] 
-**password** | **String** |  | [optional] 
+**password** | **String** |  测试2 | 
+**username** | **String** |  测试 | 
 
 

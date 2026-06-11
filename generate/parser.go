@@ -56,9 +56,18 @@ func parseRangeOption(option string) (float64, float64, bool) {
 }
 
 func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes string) (*openapiObject, error) {
-	title, _ := strconv.Unquote(p.Api.Info.Properties["title"])
-	version, _ := strconv.Unquote(p.Api.Info.Properties["version"])
-	desc, _ := strconv.Unquote(p.Api.Info.Properties["desc"])
+	title := p.Api.Info.Properties["title"]
+	if unquoted, err := strconv.Unquote(title); err == nil {
+		title = unquoted
+	}
+	version := p.Api.Info.Properties["version"]
+	if unquoted, err := strconv.Unquote(version); err == nil {
+		version = unquoted
+	}
+	desc := p.Api.Info.Properties["desc"]
+	if unquoted, err := strconv.Unquote(desc); err == nil {
+		desc = unquoted
+	}
 
 	o := openapiObject{
 		OpenAPI: "3.1.0",
@@ -366,7 +375,10 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 			operationObject.Summary = strings.ReplaceAll(route.JoinedDoc(), "\"", "")
 
 			if len(route.AtDoc.Properties) > 0 {
-				operationObject.Description, _ = strconv.Unquote(route.AtDoc.Properties["description"])
+				operationObject.Description = route.AtDoc.Properties["description"]
+				if unquoted, err := strconv.Unquote(operationObject.Description); err == nil {
+					operationObject.Description = unquoted
+				}
 			}
 
 			operationObject.Description = strings.ReplaceAll(operationObject.Description, "\"", "")

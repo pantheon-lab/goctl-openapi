@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v2"
-	"github.com/zeromicro/go-zero/tools/goctl/api/parser"
+	"github.com/zeromicro/go-zero/tools/goctl/pkg/parser/api/parser"
 	"github.com/zeromicro/go-zero/tools/goctl/plugin"
 	"github.com/pantheon-lab/goctl-openapi/generate"
 )
@@ -31,7 +31,7 @@ func standaloneGenerate(apiFile, host, basepath, schemes string, ctx *cli.Contex
 		return err
 	}
 
-	api, err := parser.ParseContent(string(data), apiFile)
+	api, err := parser.Parse(apiFile, string(data))
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func pluginGenerate(host, basepath, schemes string, ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		api, err := parser.ParseContent(string(data), info.ApiFilePath)
+		api, err := parser.Parse(info.ApiFilePath, string(data))
 		if err != nil {
 			return err
 		}

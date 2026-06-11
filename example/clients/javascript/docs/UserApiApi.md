@@ -1,4 +1,4 @@
-# SwaggerJsClient.UserApiApi
+# TypeTitleHere.UserApiApi
 
 All URIs are relative to *http://localhost*
 
@@ -10,39 +10,35 @@ Method | HTTP request | Description
 [**searchUser**](UserApiApi.md#searchUser) | **GET** /api/user/search | 用户搜索
 
 
-<a name="getUserInfo"></a>
-# **getUserInfo**
-> UserInfoReply getUserInfo(id, body)
+
+## getUserInfo
+
+> UserInfoReply getUserInfo(id)
 
 获取用户信息
 
 ### Example
+
 ```javascript
-var SwaggerJsClient = require('swagger-js-client');
+import TypeTitleHere from 'type_title_here';
 
-var apiInstance = new SwaggerJsClient.UserApiApi();
-
-var id = "id_example"; // String | 
-
-var body = new SwaggerJsClient.UserInfoReq(); // UserInfoReq | 
-
-
-var callback = function(error, data, response) {
+let apiInstance = new TypeTitleHere.UserApiApi();
+let id = "id_example"; // String | 
+apiInstance.getUserInfo(id, (error, data, response) => {
   if (error) {
     console.error(error);
   } else {
     console.log('API called successfully. Returned data: ' + data);
   }
-};
-apiInstance.getUserInfo(id, body, callback);
+});
 ```
 
 ### Parameters
 
+
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **String**|  | 
- **body** | [**UserInfoReq**](UserInfoReq.md)|  | 
 
 ### Return type
 
@@ -54,39 +50,40 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
-<a name="login"></a>
-# **login**
-> Object login(body)
+
+## login
+
+> Object login(appId, loginReq)
 
 登录
 
 ### Example
+
 ```javascript
-var SwaggerJsClient = require('swagger-js-client');
+import TypeTitleHere from 'type_title_here';
 
-var apiInstance = new SwaggerJsClient.UserApiApi();
-
-var body = new SwaggerJsClient.LoginReq(); // LoginReq | 
-
-
-var callback = function(error, data, response) {
+let apiInstance = new TypeTitleHere.UserApiApi();
+let appId = "appId_example"; // String | APPID-TEST
+let loginReq = new TypeTitleHere.LoginReq(); // LoginReq | 
+apiInstance.login(appId, loginReq, (error, data, response) => {
   if (error) {
     console.error(error);
   } else {
     console.log('API called successfully. Returned data: ' + data);
   }
-};
-apiInstance.login(body, callback);
+});
 ```
 
 ### Parameters
 
+
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**LoginReq**](LoginReq.md)|  | 
+ **appId** | **String**| APPID-TEST | 
+ **loginReq** | [**LoginReq**](LoginReq.md)|  | 
 
 ### Return type
 
@@ -98,41 +95,38 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
-<a name="register"></a>
-# **register**
-> Object register(body)
+
+## register
+
+> Object register(registerReq)
 
 注册
 
-注册一个用户
-
 ### Example
+
 ```javascript
-var SwaggerJsClient = require('swagger-js-client');
+import TypeTitleHere from 'type_title_here';
 
-var apiInstance = new SwaggerJsClient.UserApiApi();
-
-var body = new SwaggerJsClient.RegisterReq(); // RegisterReq | 
-
-
-var callback = function(error, data, response) {
+let apiInstance = new TypeTitleHere.UserApiApi();
+let registerReq = new TypeTitleHere.RegisterReq(); // RegisterReq | 注册请求结构
+apiInstance.register(registerReq, (error, data, response) => {
   if (error) {
     console.error(error);
   } else {
     console.log('API called successfully. Returned data: ' + data);
   }
-};
-apiInstance.register(body, callback);
+});
 ```
 
 ### Parameters
 
+
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**RegisterReq**](RegisterReq.md)|  | 
+ **registerReq** | [**RegisterReq**](RegisterReq.md)| 注册请求结构 | 
 
 ### Return type
 
@@ -144,43 +138,42 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
-<a name="searchUser"></a>
-# **searchUser**
-> UserSearchReply searchUser(body)
+
+## searchUser
+
+> UserInfoReply searchUser(keyWord)
 
 用户搜索
 
 ### Example
+
 ```javascript
-var SwaggerJsClient = require('swagger-js-client');
+import TypeTitleHere from 'type_title_here';
 
-var apiInstance = new SwaggerJsClient.UserApiApi();
-
-var body = new SwaggerJsClient.UserSearchReq(); // UserSearchReq | 
-
-
-var callback = function(error, data, response) {
+let apiInstance = new TypeTitleHere.UserApiApi();
+let keyWord = "keyWord_example"; // String |  关键词
+apiInstance.searchUser(keyWord, (error, data, response) => {
   if (error) {
     console.error(error);
   } else {
     console.log('API called successfully. Returned data: ' + data);
   }
-};
-apiInstance.searchUser(body, callback);
+});
 ```
 
 ### Parameters
 
+
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**UserSearchReq**](UserSearchReq.md)|  | 
+ **keyWord** | **String**|  关键词 | 
 
 ### Return type
 
-[**UserSearchReply**](UserSearchReply.md)
+[**UserInfoReply**](UserInfoReply.md)
 
 ### Authorization
 
@@ -188,6 +181,6 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 

@@ -1,0 +1,197 @@
+openapi: 3.1.0
+info:
+  title: type title here
+  description: type desc here
+  version: type version here
+servers:
+  - url: http://localhost
+    description: API server
+paths:
+  /api/user/{id}:
+    get:
+      summary: 获取用户信息
+      operationId: getUserInfo
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoReply'
+        "400":
+          description: Error code list
+          content:
+            application/json:
+              schema:
+                example: '{"100101":"out of authority","100102":"user not exist"}'
+        "500":
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+        - user-api
+  /api/user/login:
+    post:
+      summary: 登录
+      operationId: login
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: appId
+          description: APPID-TEST
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginReq'
+      tags:
+        - user-api
+  /api/user/register:
+    post:
+      summary: 注册
+      operationId: register
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema: {}
+      requestBody:
+        description: 注册请求结构
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterReq'
+      tags:
+        - user-api
+  /api/user/search:
+    get:
+      summary: 用户搜索
+      operationId: searchUser
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoReply'
+      parameters:
+        - name: keyWord
+          description: ' 关键词'
+          in: query
+          required: true
+          schema:
+            type: string
+      tags:
+        - user-api
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      title: ErrorResponse
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    LoginReq:
+      type: object
+      title: LoginReq
+      properties:
+        password:
+          type: string
+          description: ' 测试2'
+        username:
+          type: string
+          description: ' 测试'
+      required:
+        - username
+        - password
+    RegisterReq:
+      type: object
+      title: RegisterReq
+      properties:
+        mobile:
+          type: string
+        password:
+          type: string
+        username:
+          type: string
+      required:
+        - username
+        - password
+        - mobile
+    UserInfoReply:
+      type: object
+      title: UserInfoReply
+      properties:
+        age:
+          type: integer
+          format: int32
+        birthday:
+          type: string
+        description:
+          type: string
+        name:
+          type: string
+        tag:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+      required:
+        - name
+        - age
+        - birthday
+        - description
+        - tag
+        - tags
+    UserInfoReq:
+      type: object
+      title: UserInfoReq
+    UserSearchReq:
+      type: object
+      title: UserSearchReq
+      properties:
+        keyWord:
+          type: string
+          description: ' 关键词'
+      required:
+        - keyWord
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      description: API key authentication via x-api-key header
+      name: x-api-key
+      in: header
+    bearerAuth:
+      type: http
+      description: Enter JWT Bearer token
+      scheme: bearer
+      bearerFormat: JWT

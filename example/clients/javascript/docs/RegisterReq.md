@@ -1,10 +1,11 @@
-# SwaggerJsClient.RegisterReq
+# TypeTitleHere.RegisterReq
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**username** | **String** |  | [optional] 
-**password** | **String** |  | [optional] 
-**mobile** | **String** |  | [optional] 
+**mobile** | **String** |  | 
+**password** | **String** |  | 
+**username** | **String** |  | 
 
 

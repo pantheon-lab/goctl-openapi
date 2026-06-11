@@ -20,3 +20,4 @@ swagtest
 *.exe
 
 example/*.yaml
+!example/*.openapi.yaml

@@ -49,19 +49,19 @@ type (
 
 service user-api {
 	@doc(
-		summary: 注册
+		summary: "注册"
 	)
 	@handler register
 	post /user/register (RegisterReq)
 
 	@doc(
-		summary: 登录
+		summary: "登录"
 	)
 	@handler login
 	post /user/login (LoginReq)
 
 	@doc(
-		summary: 获取用户信息
+		summary: "获取用户信息"
 	)
 	@handler getUserInfo
 	/*
@@ -74,7 +74,7 @@ service user-api {
 	get /user/:id (UserInfoReq) returns (UserInfoReply)
 
 	@doc(
-		summary: 用户搜索
+		summary: "用户搜索"
 	)
 	@handler searchUser
 	get /user/search (UserSearchReq) returns (UserInfoReply)

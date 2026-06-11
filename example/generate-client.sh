@@ -1,12 +1,17 @@
 #!/bin/bash
+set -euo pipefail
+
+# Generate user.openapi.yaml and web.openapi.yaml first
+cd "$(dirname "$0")"
+go generate ./...
 
 for l in go javascript php; do
-  docker run --rm -v "$(pwd):/go-work" swaggerapi/swagger-codegen-cli generate \
-    -i "/go-work/rest.swagger.json" \
-    -l "$l" \
-    -o "/go-work/clients/$l"
+  echo "=== Generating $l client ==="
+  rm -rf "clients/$l"
+  docker run --rm -v "$(pwd):/local" openapitools/openapi-generator-cli generate \
+    -i "/local/user.openapi.yaml" \
+    -g "$l" \
+    -o "/local/clients/$l"
 done
 
-docker run --rm -v "$(pwd):/go-work" swaggerapi/swagger-codegen-cli langs
-
-echo "See https://github.com/swagger-api/swagger-codegen for more info"
+echo "Done. See https://github.com/OpenAPITools/openapi-generator for more info"

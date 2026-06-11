@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
+	"path/filepath"
 )
 
 const config = `{"Name": "gozero", "Host": "0.0.0.0", "Port": 8888}`
@@ -26,14 +26,11 @@ func main() {
 	}
 	defer server.Stop()
 
-	swaggerFile, err := os.Open("example/gozero/openapi.yaml")
+	baseDir, _ := filepath.Abs(filepath.Join(".."))
+	specFile := filepath.Join(baseDir, "user.openapi.yaml")
+	specData, err := ioutil.ReadFile(specFile)
 	if err != nil {
-		log.Println(err)
-	}
-	defer swaggerFile.Close()
-	SwaggerByte, err := ioutil.ReadAll(swaggerFile)
-	if err != nil {
-		log.Println(err)
+		log.Fatalf("failed to read spec file %s: %v", specFile, err)
 	}
 
 	server.AddRoutes([]rest.Route{
@@ -46,8 +43,8 @@ func main() {
 			Method: http.MethodGet,
 			Path:   "/swagger-json",
 			Handler: func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-				_, err := writer.Write(SwaggerByte)
+				writer.Header().Set("Content-Type", "application/openapi+yaml; charset=utf-8")
+				_, err := writer.Write(specData)
 				if err != nil {
 					httpx.Error(writer, err)
 				}
@@ -56,5 +53,6 @@ func main() {
 	})
 
 	fmt.Printf("Starting server at http://%s:%d...\n", c.Host, c.Port)
+	fmt.Printf("Swagger UI: http://%s:%d/swagger\n", c.Host, c.Port)
 	server.Start()
 }
