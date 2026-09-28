@@ -170,6 +170,18 @@ func TestWebAPIPatterns(t *testing.T) {
 			Path:    "/health",
 			Handler: "PingHandler",
 		},
+		// POST with a non-file form field: should not trigger multipart/form-data
+		{
+			Method:  "post",
+			Path:    "/comment",
+			Handler: "CommentHandler",
+			RequestType: defineStruct("CommentReq",
+				member("Comment", primitiveType("string"), `form:"comment"`, ""),
+			),
+			ResponseType: defineStruct("CommentResp",
+				member("Success", primitiveType("bool"), `json:"success"`, ""),
+			),
+		},
 	}
 
 	groups := []spec.Group{
@@ -233,6 +245,9 @@ func TestWebAPIPatterns(t *testing.T) {
 		},
 		{
 			Routes: []spec.Route{routes[6]},
+		},
+		{
+			Routes: []spec.Route{routes[7]},
 		},
 	}
 
@@ -385,6 +400,13 @@ func TestWebAPIPatterns(t *testing.T) {
 	if _, has := pingOp["parameters"]; has {
 		t.Errorf("health check should not have parameters")
 	}
+
+	// POST with only a non-file form field: it's a query param, so no body at all
+	checkPathMethod(t, paths, "/comment", "post", "CommentHandler")
+	commentOp := paths["/comment"].(map[string]interface{})["post"].(map[string]interface{})
+	if rb, has := commentOp["requestBody"]; has {
+		t.Errorf("comment endpoint should have no requestBody, got %v", rb)
+	}
 	if _, has := pingOp["requestBody"]; has {
 		t.Errorf("health check should not have requestBody")
 	}
@@ -515,7 +537,9 @@ func TestWebAPIPatterns(t *testing.T) {
 		if params["type"] != "object" {
 			t.Errorf("expected map[string]interface{} to be type 'object', got %v", params["type"])
 		}
-		// additionalProperties defaults to true for type:object in OpenAPI 3.0+
+		if _, has := params["additionalProperties"]; has {
+			t.Errorf("expected map[string]interface{} to omit additionalProperties, got %v", params["additionalProperties"])
+		}
 	}
 
 	// Check array of structs in GetCatalogListResp
