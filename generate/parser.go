@@ -20,6 +20,7 @@ var strColon = []byte(":")
 
 const (
 	validateKey     = "validate"
+	jsonTagKey      = "json"
 	defaultOption   = "default"
 	stringOption    = "string"
 	optionalOption  = "optional"
@@ -233,13 +234,26 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						parameters = append(parameters, renderStruct(member))
 					}
 				} else {
-					hasBody = true
-					// Check for form members — only for non-GET
+					hasBody = isMultipartStruct(defineStruct) || hasJSONBodyMember(defineStruct)
+					// go-zero's httpx.Parse sources form-tagged fields from the URL
+					// query string regardless of HTTP method, independently of the
+					// JSON body — so they must still appear as query parameters here.
 					for _, member := range defineStruct.Members {
-						if member.IsFormMember() {
-							hasBody = true
-							break
+						if hasPathParameters(member) || hasHeaderParameters(member) {
+							continue
 						}
+						if !member.IsFormMember() {
+							continue
+						}
+						if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
+							for _, m := range embedStruct.Members {
+								if m.IsFormMember() {
+									parameters = append(parameters, renderStruct(m))
+								}
+							}
+							continue
+						}
+						parameters = append(parameters, renderStruct(member))
 					}
 				}
 			}
@@ -408,6 +422,23 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 	}
 }
 
+// isFileUploadMember reports whether a form-tagged member looks like a file
+// upload rather than an ordinary form value. go-zero's .api DSL has no real
+// file-upload type — uploads bypass struct fields via http.Request.FormFile —
+// so multipart.FileHeader in the type name is the strongest signal when
+// expressible; falling back to the field/type name containing "file" or
+// "upload" matches this repo's existing fixture convention and avoids
+// advertising multipart/form-data for incidental form fields like name/path.
+func isFileUploadMember(member spec.Member) bool {
+	typeName := strings.ToLower(member.Type.Name())
+	if strings.Contains(typeName, "multipart.fileheader") {
+		return true
+	}
+	name := strings.ToLower(member.Name)
+	return strings.Contains(typeName, "file") || strings.Contains(typeName, "upload") ||
+		strings.Contains(name, "file") || strings.Contains(name, "upload")
+}
+
 func buildRequestBody(route spec.Route, typeName string) *openapiRequestBodyObject {
 	reqRef := "#/components/schemas/" + typeName
 
@@ -424,7 +455,7 @@ func buildRequestBody(route spec.Route, typeName string) *openapiRequestBodyObje
 
 	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
 		for _, member := range defineStruct.Members {
-			if member.IsFormMember() {
+			if member.IsFormMember() && isFileUploadMember(member) {
 				body.Content["multipart/form-data"] = openapiMediaTypeObject{
 					Schema: &openapiSchemaObject{
 						Ref: reqRef,
@@ -456,16 +487,13 @@ func getTag(service spec.Service, group spec.Group) string {
 }
 
 func renderStruct(member spec.Member) openapiParameterObject {
-	tempKind := openapiTypes[strings.Replace(member.Type.Name(), "[]", "", -1)]
-
-	ftype, format, ok := primitiveSchema(tempKind, member.Type.Name())
-	schema := &openapiSchemaObject{}
-	if ok {
-		schema.Type = ftype
-		schema.Format = format
-	} else {
-		schema.Type = tempKind.String()
-	}
+	// Delegate to schemaOfTypeName rather than a primitive-only lookup, so
+	// non-primitive query members (e.g. a form-tagged []Filter) get a real
+	// array/$ref schema instead of the literal string "invalid" that a bare
+	// reflect.Kind zero-value would otherwise produce.
+	built := schemaOfTypeName(member.Type.Name())
+	schema := &built
+	ftype := schema.Type
 	sp := openapiParameterObject{In: "query", Schema: schema}
 
 	for _, tag := range member.Tags() {
@@ -538,9 +566,12 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 		defineStruct, _ := i2.(spec.DefineStruct)
 
 		schema.Title = defineStruct.Name()
+		// form fields are query params (see renderServiceRoutes), not JSON body
+		// fields — except in a multipart upload, where they are the body.
+		skipForm := !isMultipartStruct(defineStruct)
 
 		for _, member := range defineStruct.Members {
-			if hasPathParameters(member) || hasHeaderParameters(member) {
+			if hasPathParameters(member) || hasHeaderParameters(member) || isJSONIgnored(member) || (skipForm && member.IsFormMember()) {
 				continue
 			}
 			propName := member.Name
@@ -550,7 +581,7 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 			if propName == "" {
 				memberStruct, _ := member.Type.(spec.DefineStruct)
 				for _, m := range memberStruct.Members {
-					if hasHeaderParameters(m) || hasPathParameters(m) {
+					if hasHeaderParameters(m) || hasPathParameters(m) || isJSONIgnored(m) || (skipForm && m.IsFormMember()) {
 						continue
 					}
 					subName := m.Name
@@ -618,6 +649,33 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 	}
 }
 
+func isMultipartStruct(s spec.DefineStruct) bool {
+	for _, m := range s.Members {
+		if m.IsFormMember() && isFileUploadMember(m) {
+			return true
+		}
+	}
+	return false
+}
+
+// hasJSONBodyMember reports whether any member is actually bound from the JSON
+// body, i.e. isn't a path/header/form parameter or json:"-".
+func hasJSONBodyMember(s spec.DefineStruct) bool {
+	for _, m := range s.Members {
+		if hasPathParameters(m) || hasHeaderParameters(m) || isJSONIgnored(m) || m.IsFormMember() {
+			continue
+		}
+		if embed, ok := m.Type.(spec.DefineStruct); ok && (m.IsInline || m.Name == "" || len(m.Tags()) == 0) {
+			if hasJSONBodyMember(embed) {
+				return true
+			}
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 func hasPathParameters(member spec.Member) bool {
 	for _, tag := range member.Tags() {
 		if tag.Key == "path" {
@@ -630,6 +688,18 @@ func hasPathParameters(member spec.Member) bool {
 func hasHeaderParameters(member spec.Member) bool {
 	for _, tag := range member.Tags() {
 		if tag.Key == "header" {
+			return true
+		}
+	}
+	return false
+}
+
+// isJSONIgnored reports whether a member is tagged `json:"-"`, meaning it should
+// be excluded entirely from the schema (matching encoding/json semantics), rather
+// than renamed and required as go-zero's Member.GetPropertyName does.
+func isJSONIgnored(member spec.Member) bool {
+	for _, tag := range member.Tags() {
+		if tag.Key == jsonTagKey && tag.Name == "-" {
 			return true
 		}
 	}
@@ -750,6 +820,9 @@ func schemaOfTypeName(typeName string) openapiSchemaObject {
 			valueType := typeName[bracketIdx+1:]
 			valueType = strings.TrimPrefix(valueType, "*")
 			valueType = strings.TrimPrefix(valueType, "interface{}")
+			// Free-form map: plain `type: object` already permits any keys in
+			// OpenAPI, and an explicit `additionalProperties: true` only makes
+			// Swagger UI render placeholder "additionalProp1" keys.
 			if valueType == "" || valueType == "interface{}" {
 				return openapiSchemaObject{Type: "object"}
 			}
@@ -757,13 +830,13 @@ func schemaOfTypeName(typeName string) openapiSchemaObject {
 			if valueType == "string" {
 				return openapiSchemaObject{
 					Type:                 "object",
-					AdditionalProperties: &openapiSchemaObject{Type: "string"},
+					AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Type: "string"}),
 				}
 			}
 			// For other map value types, reference the schema
 			return openapiSchemaObject{
 				Type:                 "object",
-				AdditionalProperties: &openapiSchemaObject{Ref: "#/components/schemas/" + valueType},
+				AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Ref: "#/components/schemas/" + valueType}),
 			}
 		}
 	}
@@ -778,7 +851,7 @@ func schemaOfTypeName(typeName string) openapiSchemaObject {
 	case "mapstringstring":
 		return openapiSchemaObject{
 			Type:                 "object",
-			AdditionalProperties: &openapiSchemaObject{Type: "string"},
+			AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Type: "string"}),
 		}
 	default:
 		result := openapiSchemaObject{Ref: "#/components/schemas/" + cleanName}

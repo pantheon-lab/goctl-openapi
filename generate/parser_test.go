@@ -130,8 +130,8 @@ func TestServerURL(t *testing.T) {
 
 func TestGetEndpointWithQueryParams(t *testing.T) {
 	route := spec.Route{
-		Method: "get",
-		Path:   "/user/search",
+		Method:  "get",
+		Path:    "/user/search",
 		Handler: "searchUser",
 		RequestType: defineStruct("UserSearchReq",
 			member("KeyWord", primitiveType("string"), `form:"keyWord"`, " 关键词"),
@@ -632,11 +632,11 @@ func TestEnumDefaultExampleOptions(t *testing.T) {
 					member("Status", primitiveType("string"),
 						`json:"status,options=active|inactive|pending"`,
 						""),
-			member("Count", primitiveType("int"),
-				`json:"count,default=10"`,
-				""),
-			member("Label", primitiveType("string"),
-				`json:"label,example=test-label"`,
+					member("Count", primitiveType("int"),
+						`json:"count,default=10"`,
+						""),
+					member("Label", primitiveType("string"),
+						`json:"label,example=test-label"`,
 						""),
 				),
 			},
@@ -771,6 +771,351 @@ func TestFormData(t *testing.T) {
 	}
 	if _, hasJSON := content["application/json"]; !hasJSON {
 		t.Errorf("expected application/json content for form fields")
+	}
+}
+
+func TestFormDataWithoutFileNotMultipart(t *testing.T) {
+	route := spec.Route{
+		Method:  "post",
+		Path:    "/submit",
+		Handler: "submit",
+		RequestType: defineStruct("SubmitReq",
+			member("Name", primitiveType("string"), `form:"name"`, ""),
+			member("Comment", primitiveType("string"), `form:"comment"`, ""),
+		),
+	}
+
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				defineStruct("SubmitReq",
+					member("Name", primitiveType("string"), `form:"name"`, ""),
+					member("Comment", primitiveType("string"), `form:"comment"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{
+					{
+						Routes: []spec.Route{route},
+					},
+				},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	paths := result["paths"].(map[string]interface{})
+	postOp := paths["/submit"].(map[string]interface{})["post"].(map[string]interface{})
+
+	if rb, ok := postOp["requestBody"]; ok {
+		t.Errorf("expected no requestBody when every field is a form/query param, got %v", rb)
+	}
+	params, _ := postOp["parameters"].([]interface{})
+	if len(params) != 2 {
+		t.Fatalf("expected name and comment as query params, got %v", params)
+	}
+	for _, p := range params {
+		if p.(map[string]interface{})["in"] != "query" {
+			t.Errorf("expected query param, got %v", p)
+		}
+	}
+}
+
+// TestFormFieldsExcludedFromJSONBody mirrors chatbot-ms's UpdateStationIndoorMapReq:
+// form fields are query params on a POST and must not be duplicated into the
+// JSON body alongside the real json field.
+func TestFormFieldsExcludedFromJSONBody(t *testing.T) {
+	reqType := defineStruct("UpdateMapReq",
+		member("Location", primitiveType("string"), `form:"location"`, ""),
+		member("PaidArea", primitiveType("bool"), `form:"paid_area"`, ""),
+		member("MapData", primitiveType("map[string]interface{}"), `json:"mapData"`, ""),
+	)
+	route := spec.Route{Method: "post", Path: "/indoor-map", Handler: "updateMap", RequestType: reqType}
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types:   []spec.Type{reqType},
+			Service: spec.Service{Name: "test-api", Groups: []spec.Group{{Routes: []spec.Route{route}}}},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	schemas := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	req := schemas["UpdateMapReq"].(map[string]interface{})
+	props := req["properties"].(map[string]interface{})
+	if len(props) != 1 || props["mapData"] == nil {
+		t.Errorf("expected body schema to contain only mapData, got %v", props)
+	}
+	for _, r := range req["required"].([]interface{}) {
+		if r != "mapData" {
+			t.Errorf("expected only mapData in required, got %v", req["required"])
+		}
+	}
+
+	postOp := result["paths"].(map[string]interface{})["/indoor-map"].(map[string]interface{})["post"].(map[string]interface{})
+	if params, _ := postOp["parameters"].([]interface{}); len(params) != 2 {
+		t.Errorf("expected location and paid_area as query params, got %v", params)
+	}
+}
+
+func TestJSONIgnoredFieldExcluded(t *testing.T) {
+	route := spec.Route{
+		Method:  "post",
+		Path:    "/ignored-test",
+		Handler: "ignoredTest",
+		RequestType: defineStruct("IgnoredReq",
+			member("Name", primitiveType("string"), `json:"name"`, ""),
+			member("Secret", primitiveType("string"), `json:"-"`, ""),
+		),
+	}
+
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				defineStruct("IgnoredReq",
+					member("Name", primitiveType("string"), `json:"name"`, ""),
+					member("Secret", primitiveType("string"), `json:"-"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{
+					{
+						Routes: []spec.Route{route},
+					},
+				},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	comp := result["components"].(map[string]interface{})
+	schemas := comp["schemas"].(map[string]interface{})
+	req := schemas["IgnoredReq"].(map[string]interface{})
+	props := req["properties"].(map[string]interface{})
+
+	if _, ok := props["name"]; !ok {
+		t.Errorf("expected 'name' property to be present")
+	}
+	if _, ok := props["secret"]; ok {
+		t.Errorf("expected 'secret' property to be excluded")
+	}
+	if _, ok := props["Secret"]; ok {
+		t.Errorf("expected 'Secret' property to be excluded")
+	}
+
+	if required, ok := req["required"]; ok {
+		for _, r := range required.([]interface{}) {
+			if r == "-" {
+				t.Errorf("expected literal '-' to never appear in required, got %v", required)
+			}
+			if r == "secret" || r == "Secret" {
+				t.Errorf("expected ignored field to not appear in required, got %v", required)
+			}
+		}
+	}
+}
+
+func TestJSONIgnoredFieldExcludedInNestedStruct(t *testing.T) {
+	route := spec.Route{
+		Method:  "post",
+		Path:    "/ignored-nested-test",
+		Handler: "ignoredNestedTest",
+		RequestType: defineStruct("IgnoredNestedReq",
+			member("", defineStruct("",
+				member("Name", primitiveType("string"), `json:"name"`, ""),
+				member("Secret", primitiveType("string"), `json:"-"`, ""),
+			), `json:",inline"`, ""),
+		),
+	}
+
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				defineStruct("IgnoredNestedReq",
+					member("", defineStruct("",
+						member("Name", primitiveType("string"), `json:"name"`, ""),
+						member("Secret", primitiveType("string"), `json:"-"`, ""),
+					), `json:",inline"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{
+					{
+						Routes: []spec.Route{route},
+					},
+				},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	comp := result["components"].(map[string]interface{})
+	schemas := comp["schemas"].(map[string]interface{})
+	req := schemas["IgnoredNestedReq"].(map[string]interface{})
+	props := req["properties"].(map[string]interface{})
+
+	if _, ok := props["name"]; !ok {
+		t.Errorf("expected 'name' property to be present")
+	}
+	if _, ok := props["secret"]; ok {
+		t.Errorf("expected 'secret' property to be excluded")
+	}
+	if _, ok := props["Secret"]; ok {
+		t.Errorf("expected 'Secret' property to be excluded")
+	}
+}
+
+func TestAdditionalPropertiesForFreeFormMap(t *testing.T) {
+	route := spec.Route{
+		Method:  "post",
+		Path:    "/free-form",
+		Handler: "freeForm",
+		RequestType: defineStruct("FreeFormReq",
+			member("Raw", primitiveType("interface{}"), `json:"raw"`, ""),
+			member("Params", primitiveType("map[string]interface{}"), `json:"params"`, ""),
+		),
+	}
+
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				defineStruct("FreeFormReq",
+					member("Raw", primitiveType("interface{}"), `json:"raw"`, ""),
+					member("Params", primitiveType("map[string]interface{}"), `json:"params"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{
+					{
+						Routes: []spec.Route{route},
+					},
+				},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	comp := result["components"].(map[string]interface{})
+	schemas := comp["schemas"].(map[string]interface{})
+	req := schemas["FreeFormReq"].(map[string]interface{})
+	props := req["properties"].(map[string]interface{})
+
+	for _, name := range []string{"raw", "params"} {
+		field := props[name].(map[string]interface{})
+		if field["type"] != "object" {
+			t.Errorf("expected %s to be type object, got %v", name, field["type"])
+		}
+		if _, has := field["additionalProperties"]; has {
+			t.Errorf("expected %s to omit additionalProperties (free-form object), got %v", name, field["additionalProperties"])
+		}
+	}
+}
+
+func TestAdditionalPropertiesForTypedMap(t *testing.T) {
+	route := spec.Route{
+		Method:  "post",
+		Path:    "/typed-map",
+		Handler: "typedMap",
+		RequestType: defineStruct("TypedMapReq",
+			member("Labels", primitiveType("map[string]string"), `json:"labels"`, ""),
+		),
+	}
+
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				defineStruct("TypedMapReq",
+					member("Labels", primitiveType("map[string]string"), `json:"labels"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{
+					{
+						Routes: []spec.Route{route},
+					},
+				},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	comp := result["components"].(map[string]interface{})
+	schemas := comp["schemas"].(map[string]interface{})
+	req := schemas["TypedMapReq"].(map[string]interface{})
+	props := req["properties"].(map[string]interface{})
+
+	labels := props["labels"].(map[string]interface{})
+	additionalProps, ok := labels["additionalProperties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected map[string]string to have a nested schema additionalProperties, got %v (%T)", labels["additionalProperties"], labels["additionalProperties"])
+	}
+	if additionalProps["type"] != "string" {
+		t.Errorf("expected additionalProperties schema type 'string', got %v", additionalProps["type"])
+	}
+}
+
+func TestFormFieldsAsQueryParamsOnNonGetRoutes(t *testing.T) {
+	route := spec.Route{
+		Method:  "post",
+		Path:    "/mixed",
+		Handler: "mixed",
+		RequestType: defineStruct("MixedReq",
+			member("Query", primitiveType("string"), `form:"query"`, ""),
+			member("Name", primitiveType("string"), `json:"name"`, ""),
+		),
+	}
+
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				defineStruct("MixedReq",
+					member("Query", primitiveType("string"), `form:"query"`, ""),
+					member("Name", primitiveType("string"), `json:"name"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{
+					{
+						Routes: []spec.Route{route},
+					},
+				},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	paths := result["paths"].(map[string]interface{})
+	postOp := paths["/mixed"].(map[string]interface{})["post"].(map[string]interface{})
+
+	params, ok := postOp["parameters"].([]interface{})
+	if !ok || len(params) != 1 {
+		t.Fatalf("expected 1 query parameter for form field, got %v", postOp["parameters"])
+	}
+	param := params[0].(map[string]interface{})
+	if param["name"] != "query" {
+		t.Errorf("expected parameter name 'query', got %v", param["name"])
+	}
+	if param["in"] != "query" {
+		t.Errorf("expected 'in'='query', got %v", param["in"])
+	}
+
+	reqBody := postOp["requestBody"].(map[string]interface{})
+	content := reqBody["content"].(map[string]interface{})
+	if _, hasJSON := content["application/json"]; !hasJSON {
+		t.Errorf("expected application/json content for json-tagged field")
+	}
+
+	comp := result["components"].(map[string]interface{})
+	schemas := comp["schemas"].(map[string]interface{})
+	req := schemas["MixedReq"].(map[string]interface{})
+	props := req["properties"].(map[string]interface{})
+	if _, ok := props["name"]; !ok {
+		t.Errorf("expected 'name' property to be present in body schema")
 	}
 }
 
@@ -1286,5 +1631,60 @@ func TestDescriptionFromAtDoc(t *testing.T) {
 	desc := getOp["description"].(string)
 	if desc != "A test endpoint" {
 		t.Errorf("expected description 'A test endpoint', got %q", desc)
+	}
+}
+
+// TestArrayOfStructQueryParam mirrors chatbot-ms's LogReq: a form-tagged
+// []Filter/[]Sort field used as a GET query parameter. renderStruct used to
+// look up the type via a primitive-only map, so a non-primitive element type
+// fell through to a bare reflect.Kind zero value and rendered as the literal
+// string "invalid" instead of a real array schema.
+func TestArrayOfStructQueryParam(t *testing.T) {
+	filterType := defineStruct("Filter",
+		member("Field", primitiveType("string"), `json:"field"`, ""),
+	)
+	route := spec.Route{
+		Method:  "get",
+		Path:    "/logs",
+		Handler: "listLogs",
+		RequestType: defineStruct("ListLogReq",
+			member("Filters", primitiveType("[]Filter"), `form:"filters"`, ""),
+		),
+	}
+
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				filterType,
+				defineStruct("ListLogReq",
+					member("Filters", primitiveType("[]Filter"), `form:"filters"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{
+					{
+						Routes: []spec.Route{route},
+					},
+				},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	paths := result["paths"].(map[string]interface{})
+	getOp := paths["/logs"].(map[string]interface{})["get"].(map[string]interface{})
+	params := getOp["parameters"].([]interface{})
+	if len(params) != 1 {
+		t.Fatalf("expected 1 query parameter, got %v", params)
+	}
+	param := params[0].(map[string]interface{})
+	schema := param["schema"].(map[string]interface{})
+	if schema["type"] != "array" {
+		t.Errorf("expected array schema for []Filter query param, got %v", schema)
+	}
+	items, ok := schema["items"].(map[string]interface{})
+	if !ok || items["$ref"] != "#/components/schemas/Filter" {
+		t.Errorf("expected items to $ref Filter, got %v", schema["items"])
 	}
 }
