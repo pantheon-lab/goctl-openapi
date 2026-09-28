@@ -18,18 +18,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserInfoReply'
-        "400":
-          description: Error code list
-          content:
-            application/json:
-              schema:
-                example: '{"100101":"out of authority","100102":"user not exist"}'
-        "500":
-          description: Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
       parameters:
         - name: id
           in: path
@@ -178,12 +166,6 @@ components:
     UserSearchReq:
       type: object
       title: UserSearchReq
-      properties:
-        keyWord:
-          type: string
-          description: ' 关键词'
-      required:
-        - keyWord
   securitySchemes:
     apiKey:
       type: apiKey

@@ -234,11 +234,17 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						parameters = append(parameters, renderStruct(member))
 					}
 				} else {
-					hasBody = isMultipartStruct(defineStruct) || hasJSONBodyMember(defineStruct)
+					multipart := isMultipartStruct(defineStruct)
+					_, rawBody := rawBodyMember(defineStruct)
+					hasBody = multipart || rawBody || hasJSONBodyMember(defineStruct)
 					// go-zero's httpx.Parse sources form-tagged fields from the URL
 					// query string regardless of HTTP method, independently of the
 					// JSON body — so they must still appear as query parameters here.
+					// In a multipart upload they're form-body fields instead.
 					for _, member := range defineStruct.Members {
+						if multipart {
+							break
+						}
 						if hasPathParameters(member) || hasHeaderParameters(member) {
 							continue
 						}
@@ -439,31 +445,30 @@ func isFileUploadMember(member spec.Member) bool {
 		strings.Contains(name, "file") || strings.Contains(name, "upload")
 }
 
+// isBinaryFileMember is stricter than isFileUploadMember: it picks the field
+// that carries the file bytes, so e.g. a "filePath" string isn't marked binary.
+func isBinaryFileMember(member spec.Member) bool {
+	if strings.Contains(strings.ToLower(member.Type.Name()), "multipart.fileheader") {
+		return true
+	}
+	name := strings.ToLower(member.Name)
+	return name == "file" || name == "files"
+}
+
 func buildRequestBody(route spec.Route, typeName string) *openapiRequestBodyObject {
 	reqRef := "#/components/schemas/" + typeName
-
 	body := &openapiRequestBodyObject{
 		Required: true,
-		Content: map[string]openapiMediaTypeObject{
-			"application/json": {
-				Schema: &openapiSchemaObject{
-					Ref: reqRef,
-				},
-			},
-		},
+		Content:  map[string]openapiMediaTypeObject{},
 	}
 
-	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
-		for _, member := range defineStruct.Members {
-			if member.IsFormMember() && isFileUploadMember(member) {
-				body.Content["multipart/form-data"] = openapiMediaTypeObject{
-					Schema: &openapiSchemaObject{
-						Ref: reqRef,
-					},
-				}
-				break
-			}
-		}
+	defineStruct, isStruct := route.RequestType.(spec.DefineStruct)
+	multipart := isStruct && isMultipartStruct(defineStruct)
+	if multipart {
+		body.Content["multipart/form-data"] = openapiMediaTypeObject{Schema: &openapiSchemaObject{Ref: reqRef}}
+	}
+	if !multipart || hasJSONBodyMember(defineStruct) {
+		body.Content["application/json"] = openapiMediaTypeObject{Schema: &openapiSchemaObject{Ref: reqRef}}
 	}
 
 	doc := strings.Join(route.RequestType.Documents(), ",")
@@ -619,7 +624,12 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 			if schema.Properties == nil {
 				schema.Properties = make(map[string]openapiSchemaObject)
 			}
-			schema.Properties[propName] = schemaOfField(member)
+			fieldSchema := schemaOfField(member)
+			if !skipForm && member.IsFormMember() && isBinaryFileMember(member) {
+				fieldSchema.Type = "string"
+				fieldSchema.Format = "binary"
+			}
+			schema.Properties[propName] = fieldSchema
 
 			for _, tag := range member.Tags() {
 				if tag.Key == validateKey {
@@ -645,8 +655,33 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 			}
 		}
 
+		// go-zero raw-body idiom: the handler reads the whole wire body into one
+		// json:"-" field, so that field's type IS the body/response payload.
+		if member, ok := rawBodyMember(defineStruct); ok {
+			raw := schemaOfField(member)
+			raw.Title = schema.Title
+			schema = raw
+		}
+
 		d[i2.Name()] = schema
 	}
+}
+
+// rawBodyMember returns the json:"-" member that has no path/header/form tag,
+// provided no other member is JSON-bound. That distinguishes a raw-body carrier
+// from a field that's merely excluded from an otherwise normal JSON struct.
+func rawBodyMember(s spec.DefineStruct) (spec.Member, bool) {
+	var candidate spec.Member
+	found := false
+	for _, m := range s.Members {
+		if isJSONIgnored(m) && !hasPathParameters(m) && !hasHeaderParameters(m) && !m.IsFormMember() {
+			candidate, found = m, true
+		}
+	}
+	if !found || hasJSONBodyMember(s) {
+		return spec.Member{}, false
+	}
+	return candidate, true
 }
 
 func isMultipartStruct(s spec.DefineStruct) bool {

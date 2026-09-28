@@ -398,6 +398,7 @@ paths:
           required: false
           schema:
             type: string
+            nullable: true
       tags:
         - datamall
   /v1/custom/datamall/PassengerVolumeTrain:
@@ -416,6 +417,7 @@ paths:
           required: false
           schema:
             type: string
+            nullable: true
       tags:
         - datamall
   /v1/custom/datamall/TrainServiceAlerts:
@@ -1794,8 +1796,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserAuthMagicLinkVerifyResp'
-      requestBody:
-        $ref: '#/components/requestBodies/UserAuthMagicLinkVerifyReq'
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
       tags:
         - userauth
   /v1/userauth/validate-otp:
@@ -1873,12 +1879,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VideoLookupDeleteReq'
       tags:
         - video_lookup
   /v1/video-lookup/cache:
@@ -1926,12 +1926,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VideoLookupDeleteCacheReq'
       tags:
         - video_lookup
   /v1/webhook/setsail:
@@ -2013,14 +2007,6 @@ components:
     AuthorizedReq:
       type: object
       title: AuthorizedReq
-      properties:
-        code:
-          type: string
-        state:
-          type: string
-      required:
-        - code
-        - state
     AvatarAction:
       type: object
       title: AvatarAction
@@ -2677,13 +2663,6 @@ components:
     DatamallGetBusArrivalReq:
       type: object
       title: DatamallGetBusArrivalReq
-      properties:
-        BusStopCode:
-          type: string
-        ServiceNo:
-          type: string
-      required:
-        - BusStopCode
     DatamallGetPCDRealTimeReq:
       type: object
       title: DatamallGetPCDRealTimeReq
@@ -2695,17 +2674,9 @@ components:
     DatamallGetPassengerVolumeOdTrainReq:
       type: object
       title: DatamallGetPassengerVolumeOdTrainReq
-      properties:
-        Date:
-          type: string
-          nullable: true
     DatamallGetPassengerVolumeTrainReq:
       type: object
       title: DatamallGetPassengerVolumeTrainReq
-      properties:
-        Date:
-          type: string
-          nullable: true
     DepositRate:
       type: object
       title: DepositRate
@@ -2918,16 +2889,6 @@ components:
     GetGetCatalogListReq:
       type: object
       title: GetGetCatalogListReq
-      properties:
-        limit:
-          type: integer
-          format: int32
-        page:
-          type: integer
-          format: int32
-      required:
-        - page
-        - limit
     GetMarketIndexQuoteResp:
       type: object
       title: GetMarketIndexQuoteResp
@@ -3701,12 +3662,6 @@ components:
     ListModelActionsReq:
       type: object
       title: ListModelActionsReq
-      properties:
-        use_embedded:
-          type: boolean
-          default: false
-      required:
-        - use_embedded
     ListModelActionsResp:
       type: object
       title: ListModelActionsResp
@@ -4054,18 +4009,6 @@ components:
     MtrProxyNextTrainReq:
       type: object
       title: MtrProxyNextTrainReq
-      properties:
-        lang:
-          type: string
-          default: zh
-        line:
-          type: string
-        sta:
-          type: string
-      required:
-        - line
-        - sta
-        - lang
     MtrProxyNextTrainResp:
       type: object
       title: MtrProxyNextTrainResp
@@ -4139,17 +4082,6 @@ components:
     MtrTtpHrRouteReq:
       type: object
       title: MtrTtpHrRouteReq
-      properties:
-        d:
-          type: string
-        lang:
-          type: string
-        o:
-          type: string
-      required:
-        - o
-        - d
-        - lang
     MtrTtpHrRouteResp:
       type: object
       title: MtrTtpHrRouteResp
@@ -4507,17 +4439,9 @@ components:
     OauthRequest:
       type: object
       title: OauthRequest
-      properties:
-        redirect:
-          type: string
     OauthShopifyReq:
       type: object
       title: OauthShopifyReq
-      properties:
-        shop:
-          type: string
-      required:
-        - shop
     OneMapPlace:
       type: object
       title: OneMapPlace
@@ -5054,17 +4978,6 @@ components:
     ShopifyAuthorizedReq:
       type: object
       title: ShopifyAuthorizedReq
-      properties:
-        code:
-          type: string
-        hmac:
-          type: string
-        shop:
-          type: string
-      required:
-        - code
-        - hmac
-        - shop
     SignInDto:
       type: object
       title: SignInDto
@@ -5326,6 +5239,7 @@ components:
       properties:
         file:
           type: string
+          format: binary
         path:
           type: string
     UploadResp:
@@ -5389,11 +5303,6 @@ components:
     UserAuthMagicLinkStreamReq:
       type: object
       title: UserAuthMagicLinkStreamReq
-      properties:
-        challengeId:
-          type: string
-      required:
-        - challengeId
     UserAuthMagicLinkStreamResp:
       type: object
       title: UserAuthMagicLinkStreamResp
@@ -5407,11 +5316,6 @@ components:
     UserAuthMagicLinkVerifyReq:
       type: object
       title: UserAuthMagicLinkVerifyReq
-      properties:
-        token:
-          type: string
-      required:
-        - token
     UserAuthMagicLinkVerifyResp:
       type: object
       title: UserAuthMagicLinkVerifyResp
@@ -5659,11 +5563,6 @@ components:
     ViuGetQuotaReq:
       type: object
       title: ViuGetQuotaReq
-      properties:
-        token:
-          type: string
-      required:
-        - token
     ViuGetQuotaResp:
       type: object
       title: ViuGetQuotaResp
@@ -5751,18 +5650,6 @@ components:
     UploadReq:
       required: true
       content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UploadReq'
         multipart/form-data:
           schema:
             $ref: '#/components/schemas/UploadReq'
-    UserAuthMagicLinkVerifyReq:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UserAuthMagicLinkVerifyReq'
-        multipart/form-data:
-          schema:
-            $ref: '#/components/schemas/UserAuthMagicLinkVerifyReq'

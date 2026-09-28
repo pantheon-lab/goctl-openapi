@@ -769,8 +769,52 @@ func TestFormData(t *testing.T) {
 	if _, hasForm := content["multipart/form-data"]; !hasForm {
 		t.Errorf("expected multipart/form-data content for form fields")
 	}
-	if _, hasJSON := content["application/json"]; !hasJSON {
-		t.Errorf("expected application/json content for form fields")
+	if _, hasJSON := content["application/json"]; hasJSON {
+		t.Errorf("expected no application/json content for a pure file upload")
+	}
+	if params, has := postOp["parameters"]; has {
+		t.Errorf("expected multipart form fields not to be query params, got %v", params)
+	}
+
+	props := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})["UploadReq"].(map[string]interface{})["properties"].(map[string]interface{})
+	file := props["file"].(map[string]interface{})
+	if file["type"] != "string" || file["format"] != "binary" {
+		t.Errorf("expected file to be string/binary, got %v", file)
+	}
+	if name := props["name"].(map[string]interface{}); name["format"] != nil {
+		t.Errorf("expected name to stay a plain string, got %v", name)
+	}
+}
+
+// TestRawBodyIdiom: a json:"-" field with no other JSON-bound field is the whole
+// wire body (handler unmarshals the raw body into it), so its type is the body.
+func TestRawBodyIdiom(t *testing.T) {
+	reqType := defineStruct("UpdateMapReq",
+		member("Location", primitiveType("string"), `form:"location"`, ""),
+		member("MapData", primitiveType("map[string]interface{}"), `json:"-"`, ""),
+	)
+	route := spec.Route{Method: "post", Path: "/indoor-map", Handler: "updateMap", RequestType: reqType}
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types:   []spec.Type{reqType},
+			Service: spec.Service{Name: "test-api", Groups: []spec.Group{{Routes: []spec.Route{route}}}},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	postOp := result["paths"].(map[string]interface{})["/indoor-map"].(map[string]interface{})["post"].(map[string]interface{})
+	if _, has := postOp["requestBody"]; !has {
+		t.Fatalf("expected a requestBody for the raw-body field")
+	}
+	req := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})["UpdateMapReq"].(map[string]interface{})
+	if req["type"] != "object" {
+		t.Errorf("expected raw body schema type object, got %v", req)
+	}
+	if _, has := req["properties"]; has {
+		t.Errorf("expected no wrapper properties on raw body schema, got %v", req["properties"])
+	}
+	if _, has := req["required"]; has {
+		t.Errorf("expected no required list on raw body schema, got %v", req["required"])
 	}
 }
 
