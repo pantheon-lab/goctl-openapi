@@ -769,8 +769,11 @@ func TestFormData(t *testing.T) {
 	if _, hasForm := content["multipart/form-data"]; !hasForm {
 		t.Errorf("expected multipart/form-data content for form fields")
 	}
-	if _, hasJSON := content["application/json"]; !hasJSON {
-		t.Errorf("expected application/json content for form fields")
+	if _, hasJSON := content["application/json"]; hasJSON {
+		t.Errorf("a multipart upload must not advertise application/json")
+	}
+	if params, ok := postOp["parameters"]; ok {
+		t.Errorf("expected no query parameters for a multipart body, got %v", params)
 	}
 }
 
@@ -1014,7 +1017,7 @@ func TestAdditionalPropertiesForFreeFormMap(t *testing.T) {
 	}
 }
 
-func TestAdditionalPropertiesForTypedMap(t *testing.T) {
+func TestTypedMapIsPlainObject(t *testing.T) {
 	route := spec.Route{
 		Method:  "post",
 		Path:    "/typed-map",
@@ -1049,12 +1052,34 @@ func TestAdditionalPropertiesForTypedMap(t *testing.T) {
 	props := req["properties"].(map[string]interface{})
 
 	labels := props["labels"].(map[string]interface{})
-	additionalProps, ok := labels["additionalProperties"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("expected map[string]string to have a nested schema additionalProperties, got %v (%T)", labels["additionalProperties"], labels["additionalProperties"])
+	if labels["type"] != "object" {
+		t.Errorf("expected type object, got %v", labels["type"])
 	}
-	if additionalProps["type"] != "string" {
-		t.Errorf("expected additionalProperties schema type 'string', got %v", additionalProps["type"])
+	if _, has := labels["additionalProperties"]; has {
+		t.Errorf("expected plain object without additionalProperties, got %v", labels)
+	}
+}
+
+func TestMapOfStructIsPlainObject(t *testing.T) {
+	req := defineStruct("LocaleReq",
+		member("Locales", primitiveType("map[string]CatalogLocale"), `json:"locales"`, ""),
+		member("Extra", primitiveType("map[string]interface{}"), `json:"extra"`, ""),
+	)
+	route := spec.Route{Method: "post", Path: "/locales", Handler: "locales", RequestType: req}
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types:   []spec.Type{req},
+			Service: spec.Service{Name: "test-api", Groups: []spec.Group{{Routes: []spec.Route{route}}}},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	props := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})["LocaleReq"].(map[string]interface{})["properties"].(map[string]interface{})
+	for _, name := range []string{"locales", "extra"} {
+		prop := props[name].(map[string]interface{})
+		if len(prop) != 1 || prop["type"] != "object" {
+			t.Errorf("%s: expected exactly {type: object}, got %v", name, prop)
+		}
 	}
 }
 
@@ -1683,8 +1708,9 @@ func TestArrayOfStructQueryParam(t *testing.T) {
 	if schema["type"] != "array" {
 		t.Errorf("expected array schema for []Filter query param, got %v", schema)
 	}
+	// no $ref/object items: Swagger UI would render a full-height JSON editor
 	items, ok := schema["items"].(map[string]interface{})
-	if !ok || items["$ref"] != "#/components/schemas/Filter" {
-		t.Errorf("expected items to $ref Filter, got %v", schema["items"])
+	if !ok || items["$ref"] != nil || items["type"] != "string" {
+		t.Errorf("expected plain string items, got %v", schema["items"])
 	}
 }

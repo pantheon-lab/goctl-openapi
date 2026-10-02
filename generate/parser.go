@@ -234,7 +234,8 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						parameters = append(parameters, renderStruct(member))
 					}
 				} else {
-					hasBody = isMultipartStruct(defineStruct) || hasJSONBodyMember(defineStruct)
+					multipart := isMultipartStruct(defineStruct)
+					hasBody = multipart || hasJSONBodyMember(defineStruct)
 					// go-zero's httpx.Parse sources form-tagged fields from the URL
 					// query string regardless of HTTP method, independently of the
 					// JSON body — so they must still appear as query parameters here.
@@ -242,7 +243,8 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						if hasPathParameters(member) || hasHeaderParameters(member) {
 							continue
 						}
-						if !member.IsFormMember() {
+						// in a multipart upload the form fields are the body, not query params
+						if multipart || !member.IsFormMember() {
 							continue
 						}
 						if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
@@ -442,28 +444,21 @@ func isFileUploadMember(member spec.Member) bool {
 func buildRequestBody(route spec.Route, typeName string) *openapiRequestBodyObject {
 	reqRef := "#/components/schemas/" + typeName
 
+	contentType := "application/json"
+	// a file upload is only ever sent as multipart, never as a JSON body
+	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok && isMultipartStruct(defineStruct) {
+		contentType = "multipart/form-data"
+	}
+
 	body := &openapiRequestBodyObject{
 		Required: true,
 		Content: map[string]openapiMediaTypeObject{
-			"application/json": {
+			contentType: {
 				Schema: &openapiSchemaObject{
 					Ref: reqRef,
 				},
 			},
 		},
-	}
-
-	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
-		for _, member := range defineStruct.Members {
-			if member.IsFormMember() && isFileUploadMember(member) {
-				body.Content["multipart/form-data"] = openapiMediaTypeObject{
-					Schema: &openapiSchemaObject{
-						Ref: reqRef,
-					},
-				}
-				break
-			}
-		}
 	}
 
 	doc := strings.Join(route.RequestType.Documents(), ",")
@@ -486,12 +481,26 @@ func getTag(service spec.Service, group spec.Group) string {
 	return tags
 }
 
+// simpleQuerySchema flattens non-primitive query parameter schemas. A $ref or
+// object schema (and an array of them) under `in: query` makes Swagger UI render
+// a full-height JSON editor, and a URL query value is a string anyway.
+func simpleQuerySchema(s openapiSchemaObject) openapiSchemaObject {
+	switch {
+	case s.Ref != "" || s.Type == "object":
+		return openapiSchemaObject{Type: "string"}
+	case s.Type == "array" && s.Items != nil:
+		items := simpleQuerySchema(*s.Items)
+		s.Items = &items
+	}
+	return s
+}
+
 func renderStruct(member spec.Member) openapiParameterObject {
 	// Delegate to schemaOfTypeName rather than a primitive-only lookup, so
-	// non-primitive query members (e.g. a form-tagged []Filter) get a real
-	// array/$ref schema instead of the literal string "invalid" that a bare
-	// reflect.Kind zero-value would otherwise produce.
-	built := schemaOfTypeName(member.Type.Name())
+	// non-primitive query members (e.g. a form-tagged []Filter) get a valid
+	// schema instead of the literal string "invalid" that a bare reflect.Kind
+	// zero-value would otherwise produce.
+	built := simpleQuerySchema(schemaOfTypeName(member.Type.Name()))
 	schema := &built
 	ftype := schema.Type
 	sp := openapiParameterObject{In: "query", Schema: schema}
@@ -813,32 +822,10 @@ func schemaOfTypeName(typeName string) openapiSchemaObject {
 	}
 
 	// Not a primitive — could be struct, map, interface, etc.
+	// Every map is a plain `type: object`: any explicit additionalProperties
+	// schema makes Swagger UI render placeholder "additionalProp1" keys in examples.
 	if strings.HasPrefix(typeName, "map[") {
-		// map[K]V pattern — extract value type
-		bracketIdx := strings.Index(typeName, "]")
-		if bracketIdx > 0 {
-			valueType := typeName[bracketIdx+1:]
-			valueType = strings.TrimPrefix(valueType, "*")
-			valueType = strings.TrimPrefix(valueType, "interface{}")
-			// Free-form map: plain `type: object` already permits any keys in
-			// OpenAPI, and an explicit `additionalProperties: true` only makes
-			// Swagger UI render placeholder "additionalProp1" keys.
-			if valueType == "" || valueType == "interface{}" {
-				return openapiSchemaObject{Type: "object"}
-			}
-			// Handle maps of specific types like map[string]string
-			if valueType == "string" {
-				return openapiSchemaObject{
-					Type:                 "object",
-					AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Type: "string"}),
-				}
-			}
-			// For other map value types, reference the schema
-			return openapiSchemaObject{
-				Type:                 "object",
-				AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Ref: "#/components/schemas/" + valueType}),
-			}
-		}
+		return openapiSchemaObject{Type: "object", Nullable: nullable}
 	}
 
 	cleanName := typeName
@@ -849,10 +836,7 @@ func schemaOfTypeName(typeName string) openapiSchemaObject {
 	case "interface":
 		return openapiSchemaObject{Type: "object"}
 	case "mapstringstring":
-		return openapiSchemaObject{
-			Type:                 "object",
-			AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Type: "string"}),
-		}
+		return openapiSchemaObject{Type: "object"}
 	default:
 		result := openapiSchemaObject{Ref: "#/components/schemas/" + cleanName}
 		if nullable {
