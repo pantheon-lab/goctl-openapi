@@ -1211,7 +1211,7 @@ func TestNoResponseType(t *testing.T) {
 	if resp200["description"] != "A successful response." {
 		t.Errorf("expected default response description")
 	}
-	// Should have content with schema:{} for empty response
+	// Should have content with an explicit object schema for empty response
 	content, hasContent := resp200["content"].(map[string]interface{})
 	if !hasContent {
 		t.Fatalf("expected content for empty response")
@@ -1220,8 +1220,9 @@ func TestNoResponseType(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected application/json content")
 	}
-	if jsonMedia["schema"] == nil {
-		t.Errorf("expected schema:{} for empty response")
+	schema, _ := jsonMedia["schema"].(map[string]interface{})
+	if len(schema) != 1 || schema["type"] != "object" {
+		t.Errorf("expected schema {type: object} for empty response, got %v", jsonMedia["schema"])
 	}
 }
 

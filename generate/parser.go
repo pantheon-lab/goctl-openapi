@@ -306,9 +306,10 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 					requestResponseRefs["#/components/schemas/"+route.ResponseType.Name()] = struct{}{}
 				}
 			} else {
-				// Empty response — explicit schema:{} for tooling compatibility
+				// Empty response — a bare schema:{} matches any type, which Swagger UI
+				// renders as "string"; type: object renders {} instead.
 				operationObject.Responses["200"].Content["application/json"] = openapiMediaTypeObject{
-					Schema: &openapiSchemaObject{},
+					Schema: &openapiSchemaObject{Type: "object"},
 				}
 			}
 
