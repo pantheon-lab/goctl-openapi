@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 	"unsafe"
 
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
@@ -19,7 +20,6 @@ import (
 var strColon = []byte(":")
 
 const (
-	validateKey     = "validate"
 	jsonTagKey      = "json"
 	defaultOption   = "default"
 	stringOption    = "string"
@@ -234,7 +234,8 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						parameters = append(parameters, renderStruct(member))
 					}
 				} else {
-					hasBody = isMultipartStruct(defineStruct) || hasJSONBodyMember(defineStruct)
+					multipart := isMultipartStruct(defineStruct)
+					hasBody = multipart || hasJSONBodyMember(defineStruct)
 					// go-zero's httpx.Parse sources form-tagged fields from the URL
 					// query string regardless of HTTP method, independently of the
 					// JSON body — so they must still appear as query parameters here.
@@ -242,7 +243,8 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						if hasPathParameters(member) || hasHeaderParameters(member) {
 							continue
 						}
-						if !member.IsFormMember() {
+						// in a multipart upload the form fields are the body, not query params
+						if multipart || !member.IsFormMember() {
 							continue
 						}
 						if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
@@ -278,35 +280,16 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 
 			// Set response content
 			if route.ResponseType != nil && len(route.ResponseType.Name()) > 0 {
-				mediaType := openapiMediaTypeObject{}
-				if strings.HasPrefix(route.ResponseType.Name(), "[]") {
-					refTypeName := strings.Replace(route.ResponseType.Name(), "[", "", 1)
-					refTypeName = strings.Replace(refTypeName, "]", "", 1)
-
-					mediaType.Schema = &openapiSchemaObject{
-						Type: "array",
-						Items: &openapiSchemaObject{
-							Ref: "#/components/schemas/" + refTypeName,
-						},
-					}
-				} else {
-					mediaType.Schema = &openapiSchemaObject{
-						Ref: "#/components/schemas/" + route.ResponseType.Name(),
-					}
-				}
-				operationObject.Responses["200"].Content["application/json"] = mediaType
-
-				if strings.HasPrefix(route.ResponseType.Name(), "[]") {
-					refTypeName := strings.Replace(route.ResponseType.Name(), "[", "", 1)
-					refTypeName = strings.Replace(refTypeName, "]", "", 1)
-					requestResponseRefs["#/components/schemas/"+refTypeName] = struct{}{}
-				} else {
-					requestResponseRefs["#/components/schemas/"+route.ResponseType.Name()] = struct{}{}
-				}
+				// schemaOfTypeName keeps primitives (bool, int64, []string, ...) inline
+				// instead of referencing a components schema that never exists.
+				schema := schemaOfTypeName(route.ResponseType.Name())
+				operationObject.Responses["200"].Content["application/json"] = openapiMediaTypeObject{Schema: &schema}
+				markSchemaRefs(requestResponseRefs, schema)
 			} else {
-				// Empty response — explicit schema:{} for tooling compatibility
+				// Empty response — a bare schema:{} matches any type, which Swagger UI
+				// renders as "string"; type: object renders {} instead.
 				operationObject.Responses["200"].Content["application/json"] = openapiMediaTypeObject{
-					Schema: &openapiSchemaObject{},
+					Schema: &openapiSchemaObject{Type: "object"},
 				}
 			}
 
@@ -370,14 +353,11 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 							},
 						}
 					} else if len(content) > 0 {
+						schema := schemaOfTypeName(content)
 						operationObject.Responses[code] = openapiResponseObject{
 							Description: comment,
 							Content: map[string]openapiMediaTypeObject{
-								"application/json": {
-									Schema: &openapiSchemaObject{
-										Ref: "#/components/schemas/" + content,
-									},
-								},
+								"application/json": {Schema: &schema},
 							},
 						}
 					}
@@ -422,48 +402,90 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 	}
 }
 
+// markSchemaRefs records the components schema a (possibly array) schema
+// points at, if any.
+func markSchemaRefs(refs refMap, schema openapiSchemaObject) {
+	for schema.Items != nil {
+		schema = *schema.Items
+	}
+	if schema.Ref != "" {
+		refs[schema.Ref] = struct{}{}
+	}
+}
+
 // isFileUploadMember reports whether a form-tagged member looks like a file
 // upload rather than an ordinary form value. go-zero's .api DSL has no real
 // file-upload type — uploads bypass struct fields via http.Request.FormFile —
 // so multipart.FileHeader in the type name is the strongest signal when
-// expressible; falling back to the field/type name containing "file" or
-// "upload" matches this repo's existing fixture convention and avoids
-// advertising multipart/form-data for incidental form fields like name/path.
+// expressible; otherwise the form tag or field name must contain a whole word
+// like "file" or "upload", so that e.g. profile_id/ProfileId don't match.
 func isFileUploadMember(member spec.Member) bool {
-	typeName := strings.ToLower(member.Type.Name())
-	if strings.Contains(typeName, "multipart.fileheader") {
+	if strings.Contains(strings.ToLower(member.Type.Name()), "multipart.fileheader") {
 		return true
 	}
-	name := strings.ToLower(member.Name)
-	return strings.Contains(typeName, "file") || strings.Contains(typeName, "upload") ||
-		strings.Contains(name, "file") || strings.Contains(name, "upload")
+	names := []string{member.Name}
+	for _, tag := range member.Tags() {
+		if tag.Key == "form" {
+			names = append(names, tag.Name)
+		}
+	}
+	for _, name := range names {
+		for _, word := range splitWords(name) {
+			if uploadWords[word] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+var uploadWords = map[string]bool{"file": true, "files": true, "upload": true, "attachment": true}
+
+// splitWords splits snake_case, kebab-case and camelCase identifiers into
+// lowercase words.
+func splitWords(s string) []string {
+	var words []string
+	var cur []rune
+	flush := func() {
+		if len(cur) > 0 {
+			words = append(words, strings.ToLower(string(cur)))
+			cur = cur[:0]
+		}
+	}
+	runes := []rune(s)
+	for i, r := range runes {
+		switch {
+		case r == '_' || r == '-' || r == '.' || r == ' ':
+			flush()
+			continue
+		case unicode.IsUpper(r) && i > 0 &&
+			(unicode.IsLower(runes[i-1]) || (i+1 < len(runes) && unicode.IsLower(runes[i+1]))):
+			flush()
+		}
+		cur = append(cur, r)
+	}
+	flush()
+	return words
 }
 
 func buildRequestBody(route spec.Route, typeName string) *openapiRequestBodyObject {
 	reqRef := "#/components/schemas/" + typeName
 
+	contentType := "application/json"
+	// a file upload is only ever sent as multipart, never as a JSON body
+	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok && isMultipartStruct(defineStruct) {
+		contentType = "multipart/form-data"
+	}
+
 	body := &openapiRequestBodyObject{
 		Required: true,
 		Content: map[string]openapiMediaTypeObject{
-			"application/json": {
+			contentType: {
 				Schema: &openapiSchemaObject{
 					Ref: reqRef,
 				},
 			},
 		},
-	}
-
-	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
-		for _, member := range defineStruct.Members {
-			if member.IsFormMember() && isFileUploadMember(member) {
-				body.Content["multipart/form-data"] = openapiMediaTypeObject{
-					Schema: &openapiSchemaObject{
-						Ref: reqRef,
-					},
-				}
-				break
-			}
-		}
 	}
 
 	doc := strings.Join(route.RequestType.Documents(), ",")
@@ -486,28 +508,37 @@ func getTag(service spec.Service, group spec.Group) string {
 	return tags
 }
 
+// simpleQuerySchema flattens non-primitive query parameter schemas. A $ref or
+// object schema (and an array of them) under `in: query` makes Swagger UI render
+// a full-height JSON editor, and a URL query value is a string anyway.
+func simpleQuerySchema(s openapiSchemaObject) openapiSchemaObject {
+	switch {
+	case s.Ref != "" || s.Type == "object":
+		return openapiSchemaObject{Type: "string"}
+	case s.Type == "array" && s.Items != nil:
+		items := simpleQuerySchema(*s.Items)
+		s.Items = &items
+	}
+	return s
+}
+
 func renderStruct(member spec.Member) openapiParameterObject {
 	// Delegate to schemaOfTypeName rather than a primitive-only lookup, so
-	// non-primitive query members (e.g. a form-tagged []Filter) get a real
-	// array/$ref schema instead of the literal string "invalid" that a bare
-	// reflect.Kind zero-value would otherwise produce.
-	built := schemaOfTypeName(member.Type.Name())
+	// non-primitive query members (e.g. a form-tagged []Filter) get a valid
+	// schema instead of the literal string "invalid" that a bare reflect.Kind
+	// zero-value would otherwise produce.
+	built := simpleQuerySchema(schemaOfTypeName(member.Type.Name()))
 	schema := &built
 	ftype := schema.Type
 	sp := openapiParameterObject{In: "query", Schema: schema}
 
 	for _, tag := range member.Tags() {
-		if tag.Key == validateKey {
+		if !isBindingTag(tag) {
 			continue
 		}
 
 		sp.Name = tag.Name
-		if len(tag.Options) == 0 {
-			sp.Required = true
-			continue
-		}
-
-		required := true
+		sp.Required = isRequiredTag(tag)
 		for _, option := range tag.Options {
 			if strings.HasPrefix(option, optionsOption) {
 				segs := strings.SplitN(option, equalToken, 2)
@@ -532,8 +563,6 @@ func renderStruct(member spec.Member) openapiParameterObject {
 				if len(segs) == 2 {
 					schema.Default = typedValue(segs[1], ftype)
 				}
-			} else if strings.HasPrefix(option, optionalOption) || strings.HasPrefix(option, omitemptyOption) {
-				required = false
 			}
 
 			if strings.HasPrefix(option, exampleOption) {
@@ -548,7 +577,6 @@ func renderStruct(member spec.Member) openapiParameterObject {
 				schema.Format = ""
 			}
 		}
-		sp.Required = required
 	}
 
 	if len(member.Comment) > 0 {
@@ -592,27 +620,7 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 						schema.Properties = make(map[string]openapiSchemaObject)
 					}
 					schema.Properties[subName] = schemaOfField(m)
-
-					for _, tag := range m.Tags() {
-						if tag.Key == validateKey {
-							continue
-						}
-						if len(tag.Options) == 0 {
-							if !containsStr(schema.Required, tag.Name) && tag.Name != "required" {
-								schema.Required = append(schema.Required, tag.Name)
-							}
-							continue
-						}
-						required := true
-						for _, option := range tag.Options {
-							if strings.HasPrefix(option, optionalOption) || strings.HasPrefix(option, omitemptyOption) {
-								required = false
-							}
-						}
-						if required && !containsStr(schema.Required, tag.Name) {
-							schema.Required = append(schema.Required, tag.Name)
-						}
-					}
+					appendRequired(&schema, m)
 				}
 				continue
 			}
@@ -620,29 +628,7 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 				schema.Properties = make(map[string]openapiSchemaObject)
 			}
 			schema.Properties[propName] = schemaOfField(member)
-
-			for _, tag := range member.Tags() {
-				if tag.Key == validateKey {
-					continue
-				}
-				if len(tag.Options) == 0 {
-					if !containsStr(schema.Required, tag.Name) && tag.Name != "required" {
-						schema.Required = append(schema.Required, tag.Name)
-					}
-					continue
-				}
-
-				required := true
-				for _, option := range tag.Options {
-					if strings.HasPrefix(option, optionalOption) || strings.HasPrefix(option, omitemptyOption) {
-						required = false
-					}
-				}
-
-				if required && !containsStr(schema.Required, tag.Name) {
-					schema.Required = append(schema.Required, tag.Name)
-				}
-			}
+			appendRequired(&schema, member)
 		}
 
 		d[i2.Name()] = schema
@@ -704,6 +690,37 @@ func isJSONIgnored(member spec.Member) bool {
 		}
 	}
 	return false
+}
+
+// isBindingTag reports whether a tag is one go-zero binds a field from.
+// Any other tag (validate, copier, mask, ...) carries no OpenAPI meaning and
+// must not leak into parameter names or required lists.
+func isBindingTag(tag *spec.Tag) bool {
+	switch tag.Key {
+	case jsonTagKey, "form", "path", "header":
+		return true
+	}
+	return false
+}
+
+// isRequiredTag mirrors go-zero's binding: a field is optional when tagged
+// optional/omitempty, or when it has a default=... to fall back on.
+func isRequiredTag(tag *spec.Tag) bool {
+	for _, option := range tag.Options {
+		if strings.HasPrefix(option, optionalOption) || strings.HasPrefix(option, omitemptyOption) ||
+			strings.HasPrefix(option, defaultOption) {
+			return false
+		}
+	}
+	return true
+}
+
+func appendRequired(schema *openapiSchemaObject, member spec.Member) {
+	for _, tag := range member.Tags() {
+		if isBindingTag(tag) && isRequiredTag(tag) && !containsStr(schema.Required, tag.Name) {
+			schema.Required = append(schema.Required, tag.Name)
+		}
+	}
 }
 
 func schemaOfField(member spec.Member) openapiSchemaObject {
@@ -813,32 +830,10 @@ func schemaOfTypeName(typeName string) openapiSchemaObject {
 	}
 
 	// Not a primitive — could be struct, map, interface, etc.
+	// Every map is a plain `type: object`: any explicit additionalProperties
+	// schema makes Swagger UI render placeholder "additionalProp1" keys in examples.
 	if strings.HasPrefix(typeName, "map[") {
-		// map[K]V pattern — extract value type
-		bracketIdx := strings.Index(typeName, "]")
-		if bracketIdx > 0 {
-			valueType := typeName[bracketIdx+1:]
-			valueType = strings.TrimPrefix(valueType, "*")
-			valueType = strings.TrimPrefix(valueType, "interface{}")
-			// Free-form map: plain `type: object` already permits any keys in
-			// OpenAPI, and an explicit `additionalProperties: true` only makes
-			// Swagger UI render placeholder "additionalProp1" keys.
-			if valueType == "" || valueType == "interface{}" {
-				return openapiSchemaObject{Type: "object"}
-			}
-			// Handle maps of specific types like map[string]string
-			if valueType == "string" {
-				return openapiSchemaObject{
-					Type:                 "object",
-					AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Type: "string"}),
-				}
-			}
-			// For other map value types, reference the schema
-			return openapiSchemaObject{
-				Type:                 "object",
-				AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Ref: "#/components/schemas/" + valueType}),
-			}
-		}
+		return openapiSchemaObject{Type: "object", Nullable: nullable}
 	}
 
 	cleanName := typeName
@@ -849,10 +844,7 @@ func schemaOfTypeName(typeName string) openapiSchemaObject {
 	case "interface":
 		return openapiSchemaObject{Type: "object"}
 	case "mapstringstring":
-		return openapiSchemaObject{
-			Type:                 "object",
-			AdditionalProperties: schemaAdditionalProperties(openapiSchemaObject{Type: "string"}),
-		}
+		return openapiSchemaObject{Type: "object"}
 	default:
 		result := openapiSchemaObject{Ref: "#/components/schemas/" + cleanName}
 		if nullable {
@@ -948,13 +940,12 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 	sp := openapiParameterObject{In: "header", Schema: schema}
 
 	for _, tag := range m.Tags() {
-		sp.Name = tag.Name
-		if len(tag.Options) == 0 {
-			sp.Required = true
+		if !isBindingTag(tag) {
 			continue
 		}
 
-		required := true
+		sp.Name = tag.Name
+		sp.Required = isRequiredTag(tag)
 		for _, option := range tag.Options {
 			if strings.HasPrefix(option, optionsOption) {
 				segs := strings.SplitN(option, equalToken, 2)
@@ -979,8 +970,6 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 				if len(segs) == 2 {
 					schema.Default = typedValue(segs[1], ftype)
 				}
-			} else if strings.HasPrefix(option, optionalOption) || strings.HasPrefix(option, omitemptyOption) {
-				required = false
 			}
 
 			if strings.HasPrefix(option, exampleOption) {
@@ -995,7 +984,6 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 				schema.Format = ""
 			}
 		}
-		sp.Required = required
 	}
 	sp.Description = strings.TrimLeft(m.Comment, "//")
 	if m.Name == "" {

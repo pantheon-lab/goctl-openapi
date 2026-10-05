@@ -481,31 +481,26 @@ func TestWebAPIPatterns(t *testing.T) {
 				t.Errorf("expected %s property in VideoLookup", propName)
 			}
 		}
-		// *string should have nullable: true
-		if hash, ok := props["model_config_hash"].(map[string]interface{}); ok {
-			if hash["nullable"] != true {
-				t.Errorf("expected nullable=true for model_config_hash (*string), got %v", hash["nullable"])
+		// pointer fields are nullable the OpenAPI 3.1 way: type: [T, "null"]
+		for propName, want := range map[string]string{"model_config_hash": "string", "available": "boolean", "ttl": "integer"} {
+			if prop, ok := props[propName].(map[string]interface{}); ok {
+				if !isNullableType(prop["type"], want) {
+					t.Errorf("expected type [%s null] for %s, got %v", want, propName, prop["type"])
+				}
+				if _, ok := prop["nullable"]; ok {
+					t.Errorf("nullable keyword is not valid in OpenAPI 3.1, got it on %s", propName)
+				}
 			}
 		}
-		// *bool should have nullable: true and no format
 		if avail, ok := props["available"].(map[string]interface{}); ok {
-			if avail["nullable"] != true {
-				t.Errorf("expected nullable=true for available (*bool), got %v", avail["nullable"])
-			}
 			if _, ok := avail["format"]; ok {
 				t.Errorf("boolean should not have format")
 			}
 		}
-		// *int should have nullable: true
-		if ttl, ok := props["ttl"].(map[string]interface{}); ok {
-			if ttl["nullable"] != true {
-				t.Errorf("expected nullable=true for ttl (*int), got %v", ttl["nullable"])
-			}
-		}
-		// Non-pointer string should NOT have nullable
+		// Non-pointer string stays a plain type
 		if id, ok := props["id"].(map[string]interface{}); ok {
-			if id["nullable"] == true {
-				t.Errorf("expected no nullable for id (string), got nullable=true")
+			if id["type"] != "string" {
+				t.Errorf("expected type string for id, got %v", id["type"])
 			}
 		}
 	}
