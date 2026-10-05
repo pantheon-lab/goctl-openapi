@@ -158,7 +158,7 @@ type openapiResponseObject struct {
 type openapiSchemasObject map[string]openapiSchemaObject
 
 type openapiSchemaObject struct {
-	Type                 string                            `json:"type,omitempty" yaml:"type,omitempty"`
+	Type                 string                            `json:"type,omitempty" yaml:"-"` // marshaled by MarshalYAML
 	Format               string                            `json:"format,omitempty" yaml:"format,omitempty"`
 	Ref                  string                            `json:"$ref,omitempty" yaml:"$ref,omitempty"`
 	Description          string                            `json:"description,omitempty" yaml:"description,omitempty"`
@@ -170,7 +170,7 @@ type openapiSchemaObject struct {
 	Enum                 []string                          `json:"enum,omitempty" yaml:"enum,omitempty"`
 	Default              interface{}                       `json:"default,omitempty" yaml:"default,omitempty"`
 	Example              interface{}                       `json:"example,omitempty" yaml:"example,omitempty"`
-	Nullable             bool                              `json:"nullable,omitempty" yaml:"nullable,omitempty"`
+	Nullable             bool                              `json:"nullable,omitempty" yaml:"-"` // marshaled by MarshalYAML
 	ReadOnly             bool                              `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
 	WriteOnly            bool                              `json:"writeOnly,omitempty" yaml:"writeOnly,omitempty"`
 	Minimum              float64                           `json:"minimum,omitempty" yaml:"minimum,omitempty"`
@@ -243,17 +243,34 @@ type openapiExternalDocumentationObject struct {
 	URL         string `json:"url,omitempty" yaml:"url,omitempty"`
 }
 
+// MarshalYAML renders nullability the OpenAPI 3.1 way: `nullable` was removed
+// in 3.1, so a nullable type becomes `type: [T, "null"]` and a nullable $ref
+// becomes `anyOf: [{$ref}, {type: "null"}]`.
 func (s openapiSchemaObject) MarshalYAML() (interface{}, error) {
+	type refSchema struct {
+		Ref string `yaml:"$ref"`
+	}
 	if s.Ref != "" {
-		type refSchema struct {
-			Ref      string `yaml:"$ref"`
-			Nullable bool   `yaml:"nullable,omitempty"`
+		if !s.Nullable {
+			return refSchema{Ref: s.Ref}, nil
 		}
-		return refSchema{Ref: s.Ref, Nullable: s.Nullable}, nil
+		return map[string][]interface{}{
+			"anyOf": {refSchema{Ref: s.Ref}, map[string]string{"type": "null"}},
+		}, nil
 	}
 
 	type alias openapiSchemaObject
-	return alias(s), nil
+	var typ interface{}
+	if s.Type != "" {
+		typ = s.Type
+		if s.Nullable {
+			typ = []string{s.Type, "null"}
+		}
+	}
+	return struct {
+		Type  interface{} `yaml:"type,omitempty"`
+		alias `yaml:",inline"`
+	}{typ, alias(s)}, nil
 }
 
 type refMap map[string]struct{}

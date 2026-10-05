@@ -1484,11 +1484,38 @@ func TestPointerTypeNullable(t *testing.T) {
 	req := schemas["NullableReq"].(map[string]interface{})
 	props := req["properties"].(map[string]interface{})
 
-	for _, propName := range []string{"name", "count", "active"} {
+	for propName, want := range map[string]string{"name": "string", "count": "integer", "active": "boolean"} {
 		prop := props[propName].(map[string]interface{})
-		if prop["nullable"] != true {
-			t.Errorf("expected nullable=true for %s, got %v", propName, prop["nullable"])
+		if !isNullableType(prop["type"], want) {
+			t.Errorf("expected type [%s null] for %s, got %v", want, propName, prop["type"])
 		}
+		if _, ok := prop["nullable"]; ok {
+			t.Errorf("nullable keyword is not valid in OpenAPI 3.1, got it on %s", propName)
+		}
+	}
+}
+
+func isNullableType(typ interface{}, want string) bool {
+	types, ok := typ.([]interface{})
+	return ok && len(types) == 2 && types[0] == want && types[1] == "null"
+}
+
+func TestPointerRefNullable(t *testing.T) {
+	inner := defineStruct("Inner", member("A", primitiveType("string"), `json:"a"`, ""))
+	req := defineStruct("OuterReq", member("In", primitiveType("*Inner"), `json:"in,optional"`, ""))
+	route := spec.Route{Method: "post", Path: "/outer", Handler: "outer", RequestType: req}
+	result := runGenerate(t, singleRoutePlugin(route, req, inner), "", "", "")
+
+	schemas := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	prop := schemas["OuterReq"].(map[string]interface{})["properties"].(map[string]interface{})["in"].(map[string]interface{})
+	anyOf, ok := prop["anyOf"].([]interface{})
+	if !ok || len(anyOf) != 2 ||
+		anyOf[0].(map[string]interface{})["$ref"] != "#/components/schemas/Inner" ||
+		anyOf[1].(map[string]interface{})["type"] != "null" {
+		t.Errorf("expected anyOf [$ref Inner, null], got %v", prop)
+	}
+	if _, ok := prop["$ref"]; ok {
+		t.Errorf("nullable $ref must be wrapped in anyOf, got %v", prop)
 	}
 }
 
@@ -1713,5 +1740,155 @@ func TestArrayOfStructQueryParam(t *testing.T) {
 	items, ok := schema["items"].(map[string]interface{})
 	if !ok || items["$ref"] != nil || items["type"] != "string" {
 		t.Errorf("expected plain string items, got %v", schema["items"])
+	}
+}
+
+// singleRoutePlugin wraps one route and its types in a minimal plugin.
+func singleRoutePlugin(route spec.Route, types ...spec.Type) *plugin.Plugin {
+	return &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: types,
+			Service: spec.Service{
+				Name:   "test-api",
+				Groups: []spec.Group{{Routes: []spec.Route{route}}},
+			},
+		},
+	}
+}
+
+func schemaRequired(t *testing.T, result map[string]interface{}, name string) []interface{} {
+	t.Helper()
+	schemas := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	req, _ := schemas[name].(map[string]interface{})["required"].([]interface{})
+	return req
+}
+
+func TestDefaultOptionNotRequired(t *testing.T) {
+	req := defineStruct("ListReq",
+		member("Page", primitiveType("int"), `form:"page,default=1"`, ""),
+		member("Name", primitiveType("string"), `form:"name"`, ""),
+	)
+	body := defineStruct("SearchReq",
+		member("TopK", primitiveType("int32"), `json:"top_k,default=1"`, ""),
+		member("Query", primitiveType("string"), `json:"query"`, ""),
+	)
+	route := spec.Route{Method: "get", Path: "/list", Handler: "list", RequestType: req}
+	result := runGenerate(t, singleRoutePlugin(route, req, body), "", "", "")
+
+	params := result["paths"].(map[string]interface{})["/list"].(map[string]interface{})["get"].(map[string]interface{})["parameters"].([]interface{})
+	for _, p := range params {
+		pm := p.(map[string]interface{})
+		switch pm["name"] {
+		case "page":
+			if pm["required"] == true {
+				t.Errorf("default= query param must not be required: %v", pm)
+			}
+			if pm["schema"].(map[string]interface{})["default"] != 1 {
+				t.Errorf("expected default 1 kept, got %v", pm["schema"])
+			}
+		case "name":
+			if pm["required"] != true {
+				t.Errorf("plain query param must be required: %v", pm)
+			}
+		}
+	}
+
+	required := schemaRequired(t, result, "SearchReq")
+	if len(required) != 1 || required[0] != "query" {
+		t.Errorf("expected only query required, got %v", required)
+	}
+}
+
+func TestNonBindingTagsIgnored(t *testing.T) {
+	resp := defineStruct("ListChannelResp",
+		member("Nodes", primitiveType("[]string"), `json:"nodes" copier:"ChannelList"`, ""),
+		member("Password", primitiveType("string"), `json:"password" mask:"hash"`, ""),
+	)
+	req := defineStruct("ListChannelReq",
+		member("Keyword", primitiveType("string"), `form:"keyword,optional" mask:"x"`, ""),
+		member("Origin", primitiveType("string"), `header:"Origin" mask:"y"`, ""),
+	)
+	route := spec.Route{Method: "get", Path: "/channels", Handler: "listChannel", RequestType: req, ResponseType: resp}
+	result := runGenerate(t, singleRoutePlugin(route, req, resp), "", "", "")
+
+	required := schemaRequired(t, result, "ListChannelResp")
+	if len(required) != 2 || required[0] != "nodes" || required[1] != "password" {
+		t.Errorf("expected [nodes password] required, got %v", required)
+	}
+
+	params := result["paths"].(map[string]interface{})["/channels"].(map[string]interface{})["get"].(map[string]interface{})["parameters"].([]interface{})
+	names := map[string]bool{}
+	for _, p := range params {
+		names[p.(map[string]interface{})["name"].(string)] = true
+	}
+	if !names["keyword"] || !names["Origin"] || len(names) != 2 {
+		t.Errorf("expected keyword and Origin params, got %v", names)
+	}
+}
+
+func TestPrimitiveResponseInline(t *testing.T) {
+	cases := []struct {
+		respType string
+		want     map[string]interface{}
+	}{
+		{"bool", map[string]interface{}{"type": "boolean"}},
+		{"int64", map[string]interface{}{"type": "integer", "format": "int64"}},
+		{"string", map[string]interface{}{"type": "string"}},
+	}
+	for _, c := range cases {
+		route := spec.Route{Method: "post", Path: "/r", Handler: "r", ResponseType: primitiveType(c.respType)}
+		result := runGenerate(t, singleRoutePlugin(route), "", "", "")
+		op := result["paths"].(map[string]interface{})["/r"].(map[string]interface{})["post"].(map[string]interface{})
+		schema := op["responses"].(map[string]interface{})["200"].(map[string]interface{})["content"].(map[string]interface{})["application/json"].(map[string]interface{})["schema"].(map[string]interface{})
+		if schema["$ref"] != nil {
+			t.Errorf("%s: primitive response must not be a $ref, got %v", c.respType, schema)
+		}
+		for k, v := range c.want {
+			if schema[k] != v {
+				t.Errorf("%s: expected %s=%v, got %v", c.respType, k, v, schema)
+			}
+		}
+	}
+
+	route := spec.Route{Method: "get", Path: "/names", Handler: "names", ResponseType: spec.ArrayType{RawName: "[]string", Value: primitiveType("string")}}
+	result := runGenerate(t, singleRoutePlugin(route), "", "", "")
+	op := result["paths"].(map[string]interface{})["/names"].(map[string]interface{})["get"].(map[string]interface{})
+	schema := op["responses"].(map[string]interface{})["200"].(map[string]interface{})["content"].(map[string]interface{})["application/json"].(map[string]interface{})["schema"].(map[string]interface{})
+	items, _ := schema["items"].(map[string]interface{})
+	if schema["type"] != "array" || items["type"] != "string" || items["$ref"] != nil {
+		t.Errorf("expected array of string, got %v", schema)
+	}
+}
+
+func TestProfileFormFieldNotMultipart(t *testing.T) {
+	req := defineStruct("UpdateProfileReq",
+		member("ProfileId", primitiveType("string"), `form:"profileId"`, ""),
+		member("ProfileFileName", primitiveType("string"), `json:"name"`, ""),
+	)
+	route := spec.Route{Method: "post", Path: "/profile", Handler: "updateProfile", RequestType: req}
+	result := runGenerate(t, singleRoutePlugin(route, req), "", "", "")
+	op := result["paths"].(map[string]interface{})["/profile"].(map[string]interface{})["post"].(map[string]interface{})
+
+	content := op["requestBody"].(map[string]interface{})["content"].(map[string]interface{})
+	if _, ok := content["multipart/form-data"]; ok {
+		t.Errorf("profileId form field must not make the body multipart")
+	}
+	params, _ := op["parameters"].([]interface{})
+	if len(params) != 1 || params[0].(map[string]interface{})["name"] != "profileId" {
+		t.Errorf("expected profileId as query param, got %v", params)
+	}
+}
+
+func TestUploadWordVariantsAreMultipart(t *testing.T) {
+	for _, tag := range []string{`form:"file"`, `form:"upload_file"`, `form:"attachmentFile"`, `form:"files,optional"`} {
+		req := defineStruct("UploadReq", member("Data", primitiveType("string"), tag, ""))
+		route := spec.Route{Method: "post", Path: "/up", Handler: "up", RequestType: req}
+		result := runGenerate(t, singleRoutePlugin(route, req), "", "", "")
+		op := result["paths"].(map[string]interface{})["/up"].(map[string]interface{})["post"].(map[string]interface{})
+		rb, _ := op["requestBody"].(map[string]interface{})
+		content, _ := rb["content"].(map[string]interface{})
+		if _, ok := content["multipart/form-data"]; !ok {
+			t.Errorf("%s: expected multipart/form-data, got %v", tag, op)
+		}
 	}
 }
