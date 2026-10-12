@@ -653,6 +653,7 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 		// form fields are query params (see renderServiceRoutes), not JSON body
 		// fields — except in a form body, where they are the body.
 		skipForm := !isFormBodyStruct(defineStruct)
+		multipart := isMultipartStruct(defineStruct)
 
 		for _, member := range defineStruct.Members {
 			if hasPathParameters(member) || hasHeaderParameters(member) || isJSONIgnored(member) || (skipForm && member.IsFormMember()) {
@@ -675,7 +676,7 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 					if schema.Properties == nil {
 						schema.Properties = make(map[string]openapiSchemaObject)
 					}
-					schema.Properties[subName] = schemaOfField(m)
+					schema.Properties[subName] = bodyFieldSchema(m, multipart)
 					appendRequired(&schema, m)
 				}
 				continue
@@ -683,12 +684,28 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 			if schema.Properties == nil {
 				schema.Properties = make(map[string]openapiSchemaObject)
 			}
-			schema.Properties[propName] = schemaOfField(member)
+			schema.Properties[propName] = bodyFieldSchema(member, multipart)
 			appendRequired(&schema, member)
 		}
 
 		d[i2.Name()] = schema
 	}
+}
+
+// bodyFieldSchema is schemaOfField, except that in a multipart body a file
+// upload field is a binary string, so Swagger UI renders a file picker.
+func bodyFieldSchema(member spec.Member, multipart bool) openapiSchemaObject {
+	schema := schemaOfField(member)
+	if !multipart || !member.IsFormMember() || !isFileUploadMember(member) {
+		return schema
+	}
+	file := openapiSchemaObject{Type: "string", Format: "binary"}
+	if schema.Type == "array" {
+		schema.Items = &file
+		return schema
+	}
+	file.Description = schema.Description
+	return file
 }
 
 func isMultipartStruct(s spec.DefineStruct) bool {

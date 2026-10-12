@@ -1976,3 +1976,38 @@ func TestGetRequestSchemaPruned(t *testing.T) {
 		}
 	}
 }
+
+// TestFileUploadFieldIsBinary: in a multipart body, file upload fields are
+// binary strings (Swagger UI file picker); other form fields are untouched.
+func TestFileUploadFieldIsBinary(t *testing.T) {
+	reqType := defineStruct("UploadFilesReq",
+		member("File", primitiveType("string"), `form:"file"`, "// the image"),
+		member("Files", spec.ArrayType{RawName: "[]string", Value: primitiveType("string")}, `form:"files,optional"`, ""),
+		member("Name", primitiveType("string"), `form:"name"`, ""),
+	)
+	route := spec.Route{Method: "post", Path: "/upload", Handler: "upload", RequestType: reqType}
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types:   []spec.Type{reqType},
+			Service: spec.Service{Name: "test-api", Groups: []spec.Group{{Routes: []spec.Route{route}}}},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	props := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})["UploadFilesReq"].(map[string]interface{})["properties"].(map[string]interface{})
+
+	file := props["file"].(map[string]interface{})
+	if file["type"] != "string" || file["format"] != "binary" {
+		t.Errorf("expected file to be a binary string, got %v", file)
+	}
+	if file["description"] != " the image" && file["description"] != "the image" {
+		t.Errorf("expected file description kept, got %v", file["description"])
+	}
+	items := props["files"].(map[string]interface{})["items"].(map[string]interface{})
+	if items["type"] != "string" || items["format"] != "binary" {
+		t.Errorf("expected files items to be binary strings, got %v", items)
+	}
+	if name := props["name"].(map[string]interface{}); name["format"] != nil {
+		t.Errorf("expected plain form field to have no format, got %v", name)
+	}
+}
