@@ -401,11 +401,16 @@ func TestWebAPIPatterns(t *testing.T) {
 		t.Errorf("health check should not have parameters")
 	}
 
-	// POST with only a non-file form field: it's a query param, so no body at all
+	// POST with only a non-file form field: a urlencoded form body, not multipart
 	checkPathMethod(t, paths, "/comment", "post", "CommentHandler")
 	commentOp := paths["/comment"].(map[string]interface{})["post"].(map[string]interface{})
-	if rb, has := commentOp["requestBody"]; has {
-		t.Errorf("comment endpoint should have no requestBody, got %v", rb)
+	commentBody, _ := commentOp["requestBody"].(map[string]interface{})
+	commentContent, _ := commentBody["content"].(map[string]interface{})
+	if _, ok := commentContent["application/x-www-form-urlencoded"]; !ok || len(commentContent) != 1 {
+		t.Errorf("comment endpoint should have only a urlencoded form body, got %v", commentContent)
+	}
+	if params, has := commentOp["parameters"]; has {
+		t.Errorf("comment endpoint should have no query parameters, got %v", params)
 	}
 	if _, has := pingOp["requestBody"]; has {
 		t.Errorf("health check should not have requestBody")

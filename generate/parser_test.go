@@ -616,7 +616,7 @@ func TestNestedArrays(t *testing.T) {
 
 func TestEnumDefaultExampleOptions(t *testing.T) {
 	route := spec.Route{
-		Method:  "get",
+		Method:  "post",
 		Path:    "/options-test",
 		Handler: "optionsTest",
 		RequestType: defineStruct("OptionsReq",
@@ -811,17 +811,66 @@ func TestFormDataWithoutFileNotMultipart(t *testing.T) {
 	paths := result["paths"].(map[string]interface{})
 	postOp := paths["/submit"].(map[string]interface{})["post"].(map[string]interface{})
 
-	if rb, ok := postOp["requestBody"]; ok {
-		t.Errorf("expected no requestBody when every field is a form/query param, got %v", rb)
+	rb, ok := postOp["requestBody"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected a form requestBody when every field is form-tagged")
 	}
-	params, _ := postOp["parameters"].([]interface{})
-	if len(params) != 2 {
-		t.Fatalf("expected name and comment as query params, got %v", params)
+	content := rb["content"].(map[string]interface{})
+	if _, ok := content["application/x-www-form-urlencoded"]; !ok || len(content) != 1 {
+		t.Errorf("expected only application/x-www-form-urlencoded content, got %v", content)
 	}
-	for _, p := range params {
-		if p.(map[string]interface{})["in"] != "query" {
-			t.Errorf("expected query param, got %v", p)
+	if params, has := postOp["parameters"]; has {
+		t.Errorf("expected no query params for a form body, got %v", params)
+	}
+
+	schemas := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	props := schemas["SubmitReq"].(map[string]interface{})["properties"].(map[string]interface{})
+	for _, name := range []string{"name", "comment"} {
+		if _, ok := props[name]; !ok {
+			t.Errorf("expected %q in form body schema, got %v", name, props)
 		}
+	}
+}
+
+// TestFormTypeSharedByGetAndPost mirrors web.api's UserAuthMagicLinkVerifyReq:
+// the same form-only type is a query param on GET and a form body on POST.
+func TestFormTypeSharedByGetAndPost(t *testing.T) {
+	reqType := defineStruct("VerifyReq",
+		member("Token", primitiveType("string"), `form:"token"`, ""),
+	)
+	routes := []spec.Route{
+		{Method: "get", Path: "/verify", Handler: "verifyGet", RequestType: reqType},
+		{Method: "post", Path: "/verify", Handler: "verifyPost", RequestType: reqType},
+	}
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types:   []spec.Type{reqType},
+			Service: spec.Service{Name: "test-api", Groups: []spec.Group{{Routes: routes}}},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	verify := result["paths"].(map[string]interface{})["/verify"].(map[string]interface{})
+
+	getOp := verify["get"].(map[string]interface{})
+	if _, has := getOp["requestBody"]; has {
+		t.Errorf("GET should have no requestBody")
+	}
+	if params, _ := getOp["parameters"].([]interface{}); len(params) != 1 || params[0].(map[string]interface{})["in"] != "query" {
+		t.Errorf("GET should have token as a query param, got %v", getOp["parameters"])
+	}
+
+	postOp := verify["post"].(map[string]interface{})
+	if params, has := postOp["parameters"]; has {
+		t.Errorf("POST should have no query params, got %v", params)
+	}
+	if _, ok := postOp["requestBody"].(map[string]interface{}); !ok {
+		t.Fatalf("POST should have a requestBody")
+	}
+	bodies := result["components"].(map[string]interface{})["requestBodies"].(map[string]interface{})
+	content := bodies["VerifyReq"].(map[string]interface{})["content"].(map[string]interface{})
+	if _, ok := content["application/x-www-form-urlencoded"]; !ok || len(content) != 1 {
+		t.Errorf("expected only application/x-www-form-urlencoded content, got %v", content)
 	}
 }
 
@@ -1889,6 +1938,41 @@ func TestUploadWordVariantsAreMultipart(t *testing.T) {
 		content, _ := rb["content"].(map[string]interface{})
 		if _, ok := content["multipart/form-data"]; !ok {
 			t.Errorf("%s: expected multipart/form-data, got %v", tag, op)
+		}
+	}
+}
+
+// TestGetRequestSchemaPruned: a GET request type is rendered entirely as query
+// parameters, so its schema is dropped — unless something else references it.
+func TestGetRequestSchemaPruned(t *testing.T) {
+	listReq := defineStruct("ListReq",
+		member("Page", primitiveType("int"), `form:"page"`, ""),
+	)
+	filter := defineStruct("Filter",
+		member("Name", primitiveType("string"), `form:"name"`, ""),
+	)
+	resp := defineStruct("ListResp",
+		member("Filter", filter, `json:"filter"`, ""),
+	)
+	routes := []spec.Route{
+		{Method: "get", Path: "/list", Handler: "list", RequestType: listReq, ResponseType: resp},
+		{Method: "get", Path: "/filter", Handler: "filter", RequestType: filter},
+	}
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types:   []spec.Type{listReq, filter, resp},
+			Service: spec.Service{Name: "test-api", Groups: []spec.Group{{Routes: routes}}},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	schemas := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	if _, ok := schemas["ListReq"]; ok {
+		t.Errorf("unreferenced GET request schema ListReq should be pruned")
+	}
+	for _, name := range []string{"Filter", "ListResp"} {
+		if _, ok := schemas[name]; !ok {
+			t.Errorf("expected referenced schema %s to be kept", name)
 		}
 	}
 }

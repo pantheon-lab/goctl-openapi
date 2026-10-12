@@ -121,9 +121,11 @@ func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes strin
 	}
 
 	requestResponseRefs := refMap{}
-	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, o.Paths, requestResponseRefs, &o.Components)
+	paramOnlyTypes := map[string]bool{}
+	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, o.Paths, requestResponseRefs, paramOnlyTypes, &o.Components)
 
 	renderReplyAsDefinition(o.Components.Schemas, p.Api.Types, requestResponseRefs)
+	pruneUnreferencedSchemas(o.Components.Schemas, requestResponseRefs, paramOnlyTypes)
 
 	return &o, nil
 }
@@ -146,7 +148,7 @@ func buildServerURL(schemes []string, host, basePath string) string {
 	return url
 }
 
-func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openapiPathsObject, requestResponseRefs refMap, components *openapiComponentsObject) {
+func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openapiPathsObject, requestResponseRefs refMap, paramOnlyTypes map[string]bool, components *openapiComponentsObject) {
 	// Pass 1: count request type usage for shared requestBody dedup
 	requestTypeCount := map[string]int{}
 	for _, group := range groups {
@@ -234,17 +236,18 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						parameters = append(parameters, renderStruct(member))
 					}
 				} else {
-					multipart := isMultipartStruct(defineStruct)
-					hasBody = multipart || hasJSONBodyMember(defineStruct)
-					// go-zero's httpx.Parse sources form-tagged fields from the URL
-					// query string regardless of HTTP method, independently of the
-					// JSON body — so they must still appear as query parameters here.
+					formBody := isFormBodyStruct(defineStruct)
+					hasBody = formBody || hasJSONBodyMember(defineStruct)
+					// go-zero's httpx.Parse sources form-tagged fields from r.Form,
+					// i.e. the URL query string plus a form-encoded body. Alongside a
+					// JSON body they can only come from the query string, so they
+					// must still appear as query parameters here.
 					for _, member := range defineStruct.Members {
 						if hasPathParameters(member) || hasHeaderParameters(member) {
 							continue
 						}
-						// in a multipart upload the form fields are the body, not query params
-						if multipart || !member.IsFormMember() {
+						// in a form body the form fields are the body, not query params
+						if formBody || !member.IsFormMember() {
 							continue
 						}
 						if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
@@ -291,6 +294,12 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 				operationObject.Responses["200"].Content["application/json"] = openapiMediaTypeObject{
 					Schema: &openapiSchemaObject{Type: "object"},
 				}
+			}
+
+			// a request type without a body is rendered entirely as parameters,
+			// so its schema is only kept if something else references it
+			if !hasBody && route.RequestType != nil && len(route.RequestType.Name()) > 0 {
+				paramOnlyTypes[route.RequestType.Name()] = true
 			}
 
 			// Set request body
@@ -354,6 +363,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						}
 					} else if len(content) > 0 {
 						schema := schemaOfTypeName(content)
+						markSchemaRefs(requestResponseRefs, schema)
 						operationObject.Responses[code] = openapiResponseObject{
 							Description: comment,
 							Content: map[string]openapiMediaTypeObject{
@@ -410,6 +420,47 @@ func markSchemaRefs(refs refMap, schema openapiSchemaObject) {
 	}
 	if schema.Ref != "" {
 		refs[schema.Ref] = struct{}{}
+	}
+}
+
+// pruneUnreferencedSchemas drops the schemas of request types that are only
+// ever rendered as parameters (e.g. a GET request type, whose fields are all
+// query parameters), unless an operation reaches them directly or through
+// nested $refs.
+func pruneUnreferencedSchemas(schemas openapiSchemasObject, roots refMap, candidates map[string]bool) {
+	const prefix = "#/components/schemas/"
+	reachable := map[string]bool{}
+	var queue []string
+	var visit func(s openapiSchemaObject)
+	visit = func(s openapiSchemaObject) {
+		if name := strings.TrimPrefix(s.Ref, prefix); s.Ref != "" && !reachable[name] {
+			reachable[name] = true
+			queue = append(queue, name)
+		}
+		for _, prop := range s.Properties {
+			visit(prop)
+		}
+		if s.Items != nil {
+			visit(*s.Items)
+		}
+		if s.AdditionalProperties != nil && s.AdditionalProperties.Schema != nil {
+			visit(*s.AdditionalProperties.Schema)
+		}
+	}
+	for ref := range roots {
+		visit(openapiSchemaObject{Ref: ref})
+	}
+	for len(queue) > 0 {
+		name := queue[0]
+		queue = queue[1:]
+		if s, ok := schemas[name]; ok {
+			visit(s)
+		}
+	}
+	for name := range candidates {
+		if !reachable[name] {
+			delete(schemas, name)
+		}
 	}
 }
 
@@ -472,9 +523,14 @@ func buildRequestBody(route spec.Route, typeName string) *openapiRequestBodyObje
 	reqRef := "#/components/schemas/" + typeName
 
 	contentType := "application/json"
-	// a file upload is only ever sent as multipart, never as a JSON body
-	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok && isMultipartStruct(defineStruct) {
-		contentType = "multipart/form-data"
+	if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
+		switch {
+		// a file upload is only ever sent as multipart, never as a JSON body
+		case isMultipartStruct(defineStruct):
+			contentType = "multipart/form-data"
+		case isFormBodyStruct(defineStruct):
+			contentType = "application/x-www-form-urlencoded"
+		}
 	}
 
 	body := &openapiRequestBodyObject{
@@ -595,8 +651,8 @@ func renderReplyAsDefinition(d openapiSchemasObject, p []spec.Type, refs refMap)
 
 		schema.Title = defineStruct.Name()
 		// form fields are query params (see renderServiceRoutes), not JSON body
-		// fields — except in a multipart upload, where they are the body.
-		skipForm := !isMultipartStruct(defineStruct)
+		// fields — except in a form body, where they are the body.
+		skipForm := !isFormBodyStruct(defineStruct)
 
 		for _, member := range defineStruct.Members {
 			if hasPathParameters(member) || hasHeaderParameters(member) || isJSONIgnored(member) || (skipForm && member.IsFormMember()) {
@@ -639,6 +695,28 @@ func isMultipartStruct(s spec.DefineStruct) bool {
 	for _, m := range s.Members {
 		if m.IsFormMember() && isFileUploadMember(m) {
 			return true
+		}
+	}
+	return false
+}
+
+// isFormBodyStruct reports whether a non-GET request is sent as a form body:
+// a file upload, or a struct whose only body fields are form-tagged.
+func isFormBodyStruct(s spec.DefineStruct) bool {
+	return isMultipartStruct(s) || (!hasJSONBodyMember(s) && hasFormMember(s))
+}
+
+// hasFormMember reports whether any member, including those of embedded
+// structs, is form-tagged.
+func hasFormMember(s spec.DefineStruct) bool {
+	for _, m := range s.Members {
+		if m.IsFormMember() {
+			return true
+		}
+		if embed, ok := m.Type.(spec.DefineStruct); ok && (m.IsInline || m.Name == "" || len(m.Tags()) == 0) {
+			if hasFormMember(embed) {
+				return true
+			}
 		}
 	}
 	return false
