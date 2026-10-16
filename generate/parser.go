@@ -253,7 +253,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 			hasBody := false
 			if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
 				for _, member := range defineStruct.Members {
-					if hasHeaderParameters(member) {
+					if hasHeaderParameters(member) || isEmbeddedStruct(member) {
 						parameters = parseHeader(member, parameters)
 					}
 				}
@@ -264,6 +264,10 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						}
 						if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
 							for _, m := range embedStruct.Members {
+								// embedded path/header members are rendered above
+								if hasPathParameters(m) || hasHeaderParameters(m) {
+									continue
+								}
 								parameters = append(parameters, renderStruct(m))
 							}
 							continue
@@ -691,7 +695,7 @@ func renderStruct(member spec.Member) openapiParameterObject {
 	}
 
 	if len(member.Comment) > 0 {
-		sp.Description = strings.TrimLeft(member.Comment, "//")
+		sp.Description = commentText(member.Comment)
 	}
 
 	return sp
@@ -795,6 +799,19 @@ func hasJSONBodyMember(s spec.DefineStruct) bool {
 	return false
 }
 
+// isEmbeddedStruct reports whether a member is an embedded struct, whose
+// members belong to the enclosing struct.
+func isEmbeddedStruct(m spec.Member) bool {
+	_, ok := m.Type.(spec.DefineStruct)
+	return ok && (m.IsInline || m.Name == "" || len(m.Tags()) == 0)
+}
+
+// commentText strips the // markers and surrounding whitespace from a field
+// comment, so `Name string // display name` describes it as "display name".
+func commentText(comment string) string {
+	return strings.TrimSpace(strings.ReplaceAll(comment, "//", ""))
+}
+
 func hasPathParameters(member spec.Member) bool {
 	for _, tag := range member.Tags() {
 		if tag.Key == "path" {
@@ -860,7 +877,7 @@ func schemaOfField(member spec.Member) openapiSchemaObject {
 	schema := schemaOfTypeName(member.Type.Name())
 
 	comment := member.GetComment()
-	comment = strings.Replace(comment, "//", "", -1)
+	comment = commentText(comment)
 	if comment != "" {
 		schema.Description = comment
 	}
@@ -1066,7 +1083,7 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 		schema.Type = tempKind.String()
 	}
 
-	if m.Name == "" {
+	if isEmbeddedStruct(m) {
 		// an embedded struct contributes its own header members, not itself
 		if memberDefineStruct, ok := m.Type.(spec.DefineStruct); ok {
 			for _, cm := range memberDefineStruct.Members {
@@ -1122,7 +1139,7 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 			}
 		}
 	}
-	sp.Description = strings.TrimLeft(m.Comment, "//")
+	sp.Description = commentText(m.Comment)
 	// OAS 3.1.2: a header parameter named Accept, Content-Type or Authorization
 	// SHALL be ignored; those are described by content types and securitySchemes.
 	switch http.CanonicalHeaderKey(sp.Name) {

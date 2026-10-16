@@ -100,7 +100,7 @@ paths:
                 $ref: '#/components/schemas/UserInfoReply'
       parameters:
         - name: keyWord
-          description: ' 关键词'
+          description: 关键词
           in: query
           required: true
           schema:
@@ -126,10 +126,10 @@ components:
       properties:
         password:
           type: string
-          description: ' 测试2'
+          description: 测试2
         username:
           type: string
-          description: ' 测试'
+          description: 测试
       required:
         - username
         - password

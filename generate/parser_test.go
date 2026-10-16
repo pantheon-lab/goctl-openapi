@@ -2052,3 +2052,30 @@ func TestReservedHeaderParamsIgnored(t *testing.T) {
 		t.Errorf("expected only X-Trace-Id header parameter, got %v", params)
 	}
 }
+
+func TestEmbeddedHeaderParamsAndTrimmedComments(t *testing.T) {
+	base := defineStruct("Base", member("TraceId", primitiveType("string"), `header:"X-Trace-Id,optional"`, ""))
+	embedded := spec.Member{Type: base}
+	req := defineStruct("CreateReq", embedded, member("Name", primitiveType("string"), `json:"name"`, "// display name"))
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{base, req},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{{Routes: []spec.Route{{
+					Method: "post", Path: "/c", Handler: "c", RequestType: req,
+				}}}},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	params, _ := result["paths"].(map[string]interface{})["/c"].(map[string]interface{})["post"].(map[string]interface{})["parameters"].([]interface{})
+	if len(params) != 1 || params[0].(map[string]interface{})["name"] != "X-Trace-Id" || params[0].(map[string]interface{})["in"] != "header" {
+		t.Errorf("expected embedded X-Trace-Id header parameter, got %v", params)
+	}
+	name := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})["CreateReq"].(map[string]interface{})["properties"].(map[string]interface{})["name"].(map[string]interface{})
+	if name["description"] != "display name" {
+		t.Errorf("expected trimmed description 'display name', got %q", name["description"])
+	}
+}
