@@ -167,25 +167,29 @@ type openapiSchemaObject struct {
 	AdditionalProperties *openapiAdditionalPropertiesValue `json:"additionalProperties,omitempty" yaml:"additionalProperties,omitempty"`
 	Items                *openapiSchemaObject              `json:"items,omitempty" yaml:"items,omitempty"`
 	Required             []string                          `json:"required,omitempty" yaml:"required,omitempty"`
-	Enum                 []string                          `json:"enum,omitempty" yaml:"enum,omitempty"`
+	Enum                 []interface{}                     `json:"enum,omitempty" yaml:"enum,omitempty"`
 	Default              interface{}                       `json:"default,omitempty" yaml:"default,omitempty"`
-	Example              interface{}                       `json:"example,omitempty" yaml:"example,omitempty"`
-	Nullable             bool                              `json:"nullable,omitempty" yaml:"-"` // marshaled by MarshalYAML
-	ReadOnly             bool                              `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
-	WriteOnly            bool                              `json:"writeOnly,omitempty" yaml:"writeOnly,omitempty"`
-	Minimum              float64                           `json:"minimum,omitempty" yaml:"minimum,omitempty"`
-	Maximum              float64                           `json:"maximum,omitempty" yaml:"maximum,omitempty"`
-	ExclusiveMinimum     bool                              `json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
-	ExclusiveMaximum     bool                              `json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
-	MinLength            uint64                            `json:"minLength,omitempty" yaml:"minLength,omitempty"`
-	MaxLength            uint64                            `json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
-	Pattern              string                            `json:"pattern,omitempty" yaml:"pattern,omitempty"`
-	MinItems             uint64                            `json:"minItems,omitempty" yaml:"minItems,omitempty"`
-	MaxItems             uint64                            `json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
-	UniqueItems          bool                              `json:"uniqueItems,omitempty" yaml:"uniqueItems,omitempty"`
-	MinProperties        uint64                            `json:"minProperties,omitempty" yaml:"minProperties,omitempty"`
-	MaxProperties        uint64                            `json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`
-	MultipleOf           float64                           `json:"multipleOf,omitempty" yaml:"multipleOf,omitempty"`
+	// Examples is the JSON Schema 2020-12 keyword; OAS 3.1 deprecates the
+	// singular Schema Object `example`.
+	Examples  []interface{} `json:"examples,omitempty" yaml:"examples,omitempty"`
+	Nullable  bool          `json:"nullable,omitempty" yaml:"-"` // marshaled by MarshalYAML
+	ReadOnly  bool          `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
+	WriteOnly bool          `json:"writeOnly,omitempty" yaml:"writeOnly,omitempty"`
+	// Pointers so a bound of 0 is still rendered. In OAS 3.1 (JSON Schema
+	// 2020-12) exclusiveMinimum/exclusiveMaximum are numbers, not booleans.
+	Minimum          *float64 `json:"minimum,omitempty" yaml:"minimum,omitempty"`
+	Maximum          *float64 `json:"maximum,omitempty" yaml:"maximum,omitempty"`
+	ExclusiveMinimum *float64 `json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
+	ExclusiveMaximum *float64 `json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
+	MinLength        uint64   `json:"minLength,omitempty" yaml:"minLength,omitempty"`
+	MaxLength        uint64   `json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
+	Pattern          string   `json:"pattern,omitempty" yaml:"pattern,omitempty"`
+	MinItems         uint64   `json:"minItems,omitempty" yaml:"minItems,omitempty"`
+	MaxItems         uint64   `json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
+	UniqueItems      bool     `json:"uniqueItems,omitempty" yaml:"uniqueItems,omitempty"`
+	MinProperties    uint64   `json:"minProperties,omitempty" yaml:"minProperties,omitempty"`
+	MaxProperties    uint64   `json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`
+	MultipleOf       float64  `json:"multipleOf,omitempty" yaml:"multipleOf,omitempty"`
 }
 
 // openapiAdditionalPropertiesValue represents the additionalProperties keyword,
@@ -222,19 +226,13 @@ func (a openapiAdditionalPropertiesValue) MarshalJSON() ([]byte, error) {
 type openapiSecuritySchemesObject map[string]openapiSecuritySchemeObject
 
 type openapiSecuritySchemeObject struct {
-	Type             string              `json:"type" yaml:"type"`
-	Description      string              `json:"description,omitempty" yaml:"description,omitempty"`
-	Name             string              `json:"name,omitempty" yaml:"name,omitempty"`
-	In               string              `json:"in,omitempty" yaml:"in,omitempty"`
-	Scheme           string              `json:"scheme,omitempty" yaml:"scheme,omitempty"`
-	BearerFormat     string              `json:"bearerFormat,omitempty" yaml:"bearerFormat,omitempty"`
-	Flow             string              `json:"flow,omitempty" yaml:"flow,omitempty"`
-	AuthorizationURL string              `json:"authorizationUrl,omitempty" yaml:"authorizationUrl,omitempty"`
-	TokenURL         string              `json:"tokenUrl,omitempty" yaml:"tokenUrl,omitempty"`
-	Scopes           openapiScopesObject `json:"scopes,omitempty" yaml:"scopes,omitempty"`
+	Type         string `json:"type" yaml:"type"`
+	Description  string `json:"description,omitempty" yaml:"description,omitempty"`
+	Name         string `json:"name,omitempty" yaml:"name,omitempty"`
+	In           string `json:"in,omitempty" yaml:"in,omitempty"`
+	Scheme       string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
+	BearerFormat string `json:"bearerFormat,omitempty" yaml:"bearerFormat,omitempty"`
 }
-
-type openapiScopesObject map[string]string
 
 type openapiSecurityRequirementObject map[string][]string
 
@@ -245,18 +243,24 @@ type openapiExternalDocumentationObject struct {
 
 // MarshalYAML renders nullability the OpenAPI 3.1 way: `nullable` was removed
 // in 3.1, so a nullable type becomes `type: [T, "null"]` and a nullable $ref
-// becomes `anyOf: [{$ref}, {type: "null"}]`.
+// becomes `anyOf: [{$ref}, {type: "null"}]`. A 3.1 Schema Object $ref may have
+// sibling keywords, so a field's description is kept next to it.
 func (s openapiSchemaObject) MarshalYAML() (interface{}, error) {
 	type refSchema struct {
 		Ref string `yaml:"$ref"`
 	}
 	if s.Ref != "" {
-		if !s.Nullable {
-			return refSchema{Ref: s.Ref}, nil
+		type refWithSiblings struct {
+			Ref         string        `yaml:"$ref,omitempty"`
+			AnyOf       []interface{} `yaml:"anyOf,omitempty"`
+			Description string        `yaml:"description,omitempty"`
 		}
-		return map[string][]interface{}{
-			"anyOf": {refSchema{Ref: s.Ref}, map[string]string{"type": "null"}},
-		}, nil
+		out := refWithSiblings{Ref: s.Ref, Description: s.Description}
+		if s.Nullable {
+			out.Ref = ""
+			out.AnyOf = []interface{}{refSchema{Ref: s.Ref}, map[string]string{"type": "null"}}
+		}
+		return out, nil
 	}
 
 	type alias openapiSchemaObject

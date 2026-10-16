@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.1.2
 info:
   title: ""
   version: ""
@@ -32,7 +32,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       tags:
         - azure
   /v1/azure/stt/ws:
@@ -43,7 +44,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       tags:
         - azure
   /v1/azure/stt/ws/{lang}:
@@ -54,7 +56,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: lang
           in: path
@@ -234,7 +237,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: x-api-key
           in: header
@@ -397,7 +401,9 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            type:
+              - string
+              - "null"
       tags:
         - datamall
   /v1/custom/datamall/PassengerVolumeTrain:
@@ -415,7 +421,9 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            type:
+              - string
+              - "null"
       tags:
         - datamall
   /v1/custom/datamall/TrainServiceAlerts:
@@ -653,7 +661,7 @@ paths:
             type: string
         - name: lang
           in: query
-          required: true
+          required: false
           schema:
             type: string
             default: zh
@@ -1078,7 +1086,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       tags:
         - general
   /v1/iflytek/stt/ws:
@@ -1089,7 +1098,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       tags:
         - iflytek
   /v1/kiosk/avatar/{project}:
@@ -1141,7 +1151,7 @@ paths:
       parameters:
         - name: project
           in: path
-          required: false
+          required: true
           schema:
             type: string
       tags:
@@ -1159,12 +1169,12 @@ paths:
       parameters:
         - name: project
           in: path
-          required: false
+          required: true
           schema:
             type: string
         - name: kioskId
           in: path
-          required: false
+          required: true
           schema:
             type: string
       tags:
@@ -1325,7 +1335,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: redirect
           in: query
@@ -1342,7 +1353,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: code
           in: query
@@ -1364,7 +1376,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       tags:
         - auth
   /v1/oauth/google:
@@ -1375,7 +1388,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: redirect
           in: query
@@ -1392,7 +1406,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: code
           in: query
@@ -1414,7 +1429,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       tags:
         - auth
   /v1/oauth/refresh_token:
@@ -1443,7 +1459,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: shop
           in: query
@@ -1460,7 +1477,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: code
           in: query
@@ -1555,7 +1573,7 @@ paths:
       parameters:
         - name: use_embedded
           in: query
-          required: true
+          required: false
           schema:
             type: boolean
             default: false
@@ -1572,7 +1590,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       parameters:
         - name: lang
           in: path
@@ -1621,7 +1640,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       requestBody:
         $ref: '#/components/requestBodies/NewFlexibleRequest'
       tags:
@@ -1648,7 +1668,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       requestBody:
         $ref: '#/components/requestBodies/NewRenderRequest'
       tags:
@@ -1709,12 +1730,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserData'
-      parameters:
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
       tags:
         - user
       security:
@@ -1873,12 +1888,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VideoLookupDeleteReq'
       tags:
         - video_lookup
   /v1/video-lookup/cache:
@@ -1926,12 +1935,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VideoLookupDeleteCacheReq'
       tags:
         - video_lookup
   /v1/webhook/setsail:
@@ -1942,7 +1945,8 @@ paths:
           description: A successful response.
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       requestBody:
         required: true
         content:
@@ -2010,17 +2014,6 @@ components:
         - name
         - gender
         - language
-    AuthorizedReq:
-      type: object
-      title: AuthorizedReq
-      properties:
-        code:
-          type: string
-        state:
-          type: string
-      required:
-        - code
-        - state
     AvatarAction:
       type: object
       title: AvatarAction
@@ -2044,45 +2037,50 @@ components:
             $ref: '#/components/schemas/AvatarAction'
       required:
         - data
-    AzureSttWebsocketLangReq:
-      type: object
-      title: AzureSttWebsocketLangReq
     Bathroom:
       type: object
       title: Bathroom
       properties:
         bathrooms:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     Bedroom:
       type: object
       title: Bedroom
       properties:
         bedrooms:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     BldgAge:
       type: object
       title: BldgAge
       properties:
         bldg_age:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
           type: string
           default: Equal
@@ -2352,9 +2350,6 @@ components:
         - credit
         - displayText
         - media
-    ChatMessageConversationStreamReq:
-      type: object
-      title: ChatMessageConversationStreamReq
     ChatMessageConversationStreamResp:
       type: object
       title: ChatMessageConversationStreamResp
@@ -2362,8 +2357,9 @@ components:
         event:
           type: string
         message:
-          $ref: '#/components/schemas/ChatMessage'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/ChatMessage'
+            - type: "null"
       required:
         - event
     ChatMessageNewEntryReq:
@@ -2371,21 +2367,24 @@ components:
       title: ChatMessageNewEntryReq
       properties:
         flow_name:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         gesture:
           type: string
           default: default
         intent_name:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         language_code:
           type: string
         metadata:
           type: object
         page_name:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         query:
           type: string
         role:
@@ -2400,30 +2399,27 @@ components:
       required:
         - session_id
         - language_code
-        - role
-        - gesture
     ChatMessageNewEntryResp:
       type: object
       title: ChatMessageNewEntryResp
       properties:
         message:
-          $ref: '#/components/schemas/ChatMessage'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/ChatMessage'
+            - type: "null"
         success:
           type: boolean
       required:
         - success
         - message
-    ChatProfileConfigReq:
-      type: object
-      title: ChatProfileConfigReq
     ChatProfileConfigResp:
       type: object
       title: ChatProfileConfigResp
       properties:
         channel:
-          $ref: '#/components/schemas/Channel'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/Channel'
+            - type: "null"
         success:
           type: boolean
       required:
@@ -2494,9 +2490,6 @@ components:
         - session_id
         - user_message
         - fallback_message
-    CheckRegisterDeviceReq:
-      type: object
-      title: CheckRegisterDeviceReq
     CheckRegisterDeviceResp:
       type: object
       title: CheckRegisterDeviceResp
@@ -2674,16 +2667,6 @@ components:
           type: object
       required:
         - result
-    DatamallGetBusArrivalReq:
-      type: object
-      title: DatamallGetBusArrivalReq
-      properties:
-        BusStopCode:
-          type: string
-        ServiceNo:
-          type: string
-      required:
-        - BusStopCode
     DatamallGetPCDRealTimeReq:
       type: object
       title: DatamallGetPCDRealTimeReq
@@ -2692,20 +2675,6 @@ components:
           type: string
       required:
         - station
-    DatamallGetPassengerVolumeOdTrainReq:
-      type: object
-      title: DatamallGetPassengerVolumeOdTrainReq
-      properties:
-        Date:
-          type: string
-          nullable: true
-    DatamallGetPassengerVolumeTrainReq:
-      type: object
-      title: DatamallGetPassengerVolumeTrainReq
-      properties:
-        Date:
-          type: string
-          nullable: true
     DepositRate:
       type: object
       title: DepositRate
@@ -2915,19 +2884,6 @@ components:
           type: string
         profile_id:
           type: string
-    GetGetCatalogListReq:
-      type: object
-      title: GetGetCatalogListReq
-      properties:
-        limit:
-          type: integer
-          format: int32
-        page:
-          type: integer
-          format: int32
-      required:
-        - page
-        - limit
     GetMarketIndexQuoteResp:
       type: object
       title: GetMarketIndexQuoteResp
@@ -2959,7 +2915,6 @@ components:
           default: news_type
       required:
         - payload
-        - type
     GetMidlandPropertyListReq:
       type: object
       title: GetMidlandPropertyListReq
@@ -3047,17 +3002,7 @@ components:
             type: string
       required:
         - lang
-        - mtr_ids
-        - school_net
-        - intsmdist_ids
-        - est_ids
-        - phase_ids
-        - garden
-        - facilityGroup
-        - floor_level
         - university_ids
-        - type
-        - category
         - limit
     GetMidlandPropertyListResp:
       type: object
@@ -3070,7 +3015,6 @@ components:
           default: property_type
       required:
         - payload
-        - type
     GetOutlookScheduleReq:
       type: object
       title: GetOutlookScheduleReq
@@ -3088,7 +3032,6 @@ components:
         - userEmail
         - startDateTime
         - endDateTime
-        - timezone
     GetOutlookScheduleResp:
       type: object
       title: GetOutlookScheduleResp
@@ -3099,9 +3042,6 @@ components:
             $ref: '#/components/schemas/ScheduleItem'
       required:
         - data
-    GetProjectAvatarListReq:
-      type: object
-      title: GetProjectAvatarListReq
     GetProjectAvatarListResp:
       type: object
       title: GetProjectAvatarListResp
@@ -3132,9 +3072,6 @@ components:
         - node
         - success
         - message
-    GetProjectKioskConfigReq:
-      type: object
-      title: GetProjectKioskConfigReq
     GetProjectKioskConfigResp:
       type: object
       title: GetProjectKioskConfigResp
@@ -3258,8 +3195,6 @@ components:
           default: 100000
       required:
         - query
-        - languageCode
-        - radius
     GoogleMapSearchResp:
       type: object
       title: GoogleMapSearchResp
@@ -3459,7 +3394,6 @@ components:
           default: zh-HK
       required:
         - branch_code
-        - language_code
     HsbcRecordTicketResp:
       type: object
       title: HsbcRecordTicketResp
@@ -3562,7 +3496,7 @@ components:
             $ref: '#/components/schemas/KfcMemberApiResponseData'
         datatype:
           type: string
-          description: ' 1:外帶 2:外送'
+          description: 1:外帶 2:外送
         imageurl:
           type: string
         orderid:
@@ -3685,9 +3619,6 @@ components:
           type: string
         track:
           type: string
-    ListAudioVoiceReq:
-      type: object
-      title: ListAudioVoiceReq
     ListAudioVoiceResp:
       type: object
       title: ListAudioVoiceResp
@@ -3698,15 +3629,6 @@ components:
             $ref: '#/components/schemas/AudioVoice'
       required:
         - voices
-    ListModelActionsReq:
-      type: object
-      title: ListModelActionsReq
-      properties:
-        use_embedded:
-          type: boolean
-          default: false
-      required:
-        - use_embedded
     ListModelActionsResp:
       type: object
       title: ListModelActionsResp
@@ -3764,14 +3686,17 @@ components:
       title: MbedRoom
       properties:
         mbed_room:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     MediaMedia:
       type: object
       title: MediaMedia
@@ -3801,8 +3726,6 @@ components:
           type: string
           default: text
       required:
-        - type
-        - format
         - language_code
         - content
     MessageDto:
@@ -3897,8 +3820,9 @@ components:
           items:
             type: string
         gender:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         model_id:
           type: string
       required:
@@ -4051,21 +3975,6 @@ components:
       required:
         - availability
         - car
-    MtrProxyNextTrainReq:
-      type: object
-      title: MtrProxyNextTrainReq
-      properties:
-        lang:
-          type: string
-          default: zh
-        line:
-          type: string
-        sta:
-          type: string
-      required:
-        - line
-        - sta
-        - lang
     MtrProxyNextTrainResp:
       type: object
       title: MtrProxyNextTrainResp
@@ -4074,9 +3983,7 @@ components:
           type: string
         data:
           type: object
-          description: ' key is line-station code e.g. ''EAL-SHT'''
-          additionalProperties:
-            $ref: '#/components/schemas/MtrProxyNextTrain'
+          description: key is line-station code e.g. 'EAL-SHT'
         message:
           type: string
         resultCode:
@@ -4136,20 +4043,6 @@ components:
         - route
         - timeType
         - length
-    MtrTtpHrRouteReq:
-      type: object
-      title: MtrTtpHrRouteReq
-      properties:
-        d:
-          type: string
-        lang:
-          type: string
-        o:
-          type: string
-      required:
-        - o
-        - d
-        - lang
     MtrTtpHrRouteResp:
       type: object
       title: MtrTtpHrRouteResp
@@ -4276,8 +4169,6 @@ components:
           default: 100000
       required:
         - query
-        - radius
-        - languageCode
     NavitimeMapSearchResp:
       type: object
       title: NavitimeMapSearchResp
@@ -4296,11 +4187,13 @@ components:
       title: NetArea
       properties:
         net_area:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
           type: string
           default: Equal
@@ -4309,11 +4202,13 @@ components:
       title: NetFtPrice
       properties:
         net_ft_price:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
           type: string
           default: Equal
@@ -4353,10 +4248,6 @@ components:
       required:
         - session_name
         - text_content
-        - language_code
-        - skipAudioRender
-        - skipVideoRender
-        - gesture
     NewClientMessageResp:
       type: object
       title: NewClientMessageResp
@@ -4432,14 +4323,14 @@ components:
           default: true
       required:
         - client_name
-        - end_original_session
     NewClientSessionResp:
       type: object
       title: NewClientSessionResp
       properties:
         session:
-          $ref: '#/components/schemas/ChatSession'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/ChatSession'
+            - type: "null"
         success:
           type: boolean
       required:
@@ -4502,22 +4393,6 @@ components:
       required:
         - text_content
         - language_code
-        - skipAudioRender
-        - skipVideoRender
-    OauthRequest:
-      type: object
-      title: OauthRequest
-      properties:
-        redirect:
-          type: string
-    OauthShopifyReq:
-      type: object
-      title: OauthShopifyReq
-      properties:
-        shop:
-          type: string
-      required:
-        - shop
     OneMapPlace:
       type: object
       title: OneMapPlace
@@ -4582,7 +4457,6 @@ components:
       required:
         - start
         - end
-        - routeType
     OneMapRoutingResp:
       type: object
       title: OneMapRoutingResp
@@ -4625,7 +4499,6 @@ components:
           type: string
       required:
         - searchVal
-        - pageNum
     OneMapSearchResp:
       type: object
       title: OneMapSearchResp
@@ -4656,14 +4529,17 @@ components:
       title: OthersRoom
       properties:
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         others_room:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     PayloadDto:
       type: object
       title: PayloadDto
@@ -4716,11 +4592,13 @@ components:
       title: Price
       properties:
         original:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         price:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         range:
           type: string
           default: Equal
@@ -4808,9 +4686,6 @@ components:
         - content_type
         - title
         - payload
-    QwenSttWebsocketLangReq:
-      type: object
-      title: QwenSttWebsocketLangReq
     RateRow:
       type: object
       title: RateRow
@@ -5051,20 +4926,6 @@ components:
       required:
         - success
         - message
-    ShopifyAuthorizedReq:
-      type: object
-      title: ShopifyAuthorizedReq
-      properties:
-        code:
-          type: string
-        hmac:
-          type: string
-        shop:
-          type: string
-      required:
-        - code
-        - hmac
-        - shop
     SignInDto:
       type: object
       title: SignInDto
@@ -5080,7 +4941,6 @@ components:
       required:
         - email
         - password
-        - hash
     SignInRes:
       type: object
       title: SignInRes
@@ -5232,9 +5092,6 @@ components:
         - fulfillmentResponse
         - sessionInfo
         - payload
-    SingpostGetPaymentStatusReq:
-      type: object
-      title: SingpostGetPaymentStatusReq
     SingpostKioskUpdateStatusReq:
       type: object
       title: SingpostKioskUpdateStatusReq
@@ -5386,14 +5243,6 @@ components:
       required:
         - challengeId
         - expiresInSeconds
-    UserAuthMagicLinkStreamReq:
-      type: object
-      title: UserAuthMagicLinkStreamReq
-      properties:
-        challengeId:
-          type: string
-      required:
-        - challengeId
     UserAuthMagicLinkStreamResp:
       type: object
       title: UserAuthMagicLinkStreamResp
@@ -5464,21 +5313,18 @@ components:
         - is_active
         - is_verified
         - profiles
-    UserDataReq:
-      type: object
-      title: UserDataReq
     UserProfile:
       type: object
       title: UserProfile
       properties:
         details:
           type: object
-          description: ' from profile table'
+          description: from profile table
         is_active:
           type: boolean
         name:
           type: string
-          description: ' from profile table'
+          description: from profile table
         permission:
           type: string
         profile_id:
@@ -5510,28 +5356,34 @@ components:
       title: VideoLookup
       properties:
         available:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
         cacheId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         id:
           type: string
         model_action_hash:
           type: string
         model_config_hash:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         ttl:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int32
-          nullable: true
         videoBucket:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         videoPath:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
       required:
         - id
         - model_action_hash
@@ -5540,14 +5392,16 @@ components:
       title: VideoLookupCreateReq
       properties:
         cacheId:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         hash:
           type: string
         ttl:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int32
-          nullable: true
         videoBucket:
           type: string
         videoPath:
@@ -5571,9 +5425,6 @@ components:
         - returnCode
         - message
         - videoLookup
-    VideoLookupDeleteCacheReq:
-      type: object
-      title: VideoLookupDeleteCacheReq
     VideoLookupDeleteCacheResp:
       type: object
       title: VideoLookupDeleteCacheResp
@@ -5586,9 +5437,6 @@ components:
       required:
         - returnCode
         - message
-    VideoLookupDeleteReq:
-      type: object
-      title: VideoLookupDeleteReq
     VideoLookupDeleteResp:
       type: object
       title: VideoLookupDeleteResp
@@ -5601,9 +5449,6 @@ components:
       required:
         - returnCode
         - message
-    VideoLookupGetByHashReq:
-      type: object
-      title: VideoLookupGetByHashReq
     VideoLookupGetByHashResp:
       type: object
       title: VideoLookupGetByHashResp
@@ -5619,9 +5464,6 @@ components:
         - returnCode
         - message
         - videoLookup
-    VideoLookupListByCacheIdReq:
-      type: object
-      title: VideoLookupListByCacheIdReq
     VideoLookupListByCacheIdResp:
       type: object
       title: VideoLookupListByCacheIdResp
@@ -5656,14 +5498,6 @@ components:
         - cacheIds
         - returnCode
         - message
-    ViuGetQuotaReq:
-      type: object
-      title: ViuGetQuotaReq
-      properties:
-        token:
-          type: string
-      required:
-        - token
     ViuGetQuotaResp:
       type: object
       title: ViuGetQuotaResp
@@ -5751,18 +5585,12 @@ components:
     UploadReq:
       required: true
       content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UploadReq'
         multipart/form-data:
           schema:
             $ref: '#/components/schemas/UploadReq'
     UserAuthMagicLinkVerifyReq:
       required: true
       content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UserAuthMagicLinkVerifyReq'
-        multipart/form-data:
+        application/x-www-form-urlencoded:
           schema:
             $ref: '#/components/schemas/UserAuthMagicLinkVerifyReq'

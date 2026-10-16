@@ -90,8 +90,8 @@ func TestOpenAPIVersion(t *testing.T) {
 	}
 	result := runGenerate(t, p, "", "", "")
 	version := result["openapi"]
-	if version != "3.1.0" {
-		t.Errorf("expected openapi '3.1.0', got %v", version)
+	if version != "3.1.2" {
+		t.Errorf("expected openapi '3.1.2', got %v", version)
 	}
 }
 
@@ -560,9 +560,12 @@ func TestRespDoc(t *testing.T) {
 	content := resp400["content"].(map[string]interface{})
 	jsonMedia := content["application/json"].(map[string]interface{})
 	schema := jsonMedia["schema"].(map[string]interface{})
-	example, ok := schema["example"]
-	if !ok || example == "" {
-		t.Errorf("expected example in 400 response")
+	if _, ok := schema["example"]; ok {
+		t.Errorf("schema-level example is deprecated in OpenAPI 3.1, got %v", schema)
+	}
+	example, ok := jsonMedia["example"].(map[string]interface{})
+	if !ok || len(example) == 0 {
+		t.Errorf("expected media type example in 400 response, got %v", jsonMedia["example"])
 	}
 }
 
@@ -672,8 +675,12 @@ func TestEnumDefaultExampleOptions(t *testing.T) {
 
 	// Check example
 	label := props["label"].(map[string]interface{})
-	if label["example"] != "test-label" {
-		t.Errorf("expected example 'test-label', got %v", label["example"])
+	examples, _ := label["examples"].([]interface{})
+	if len(examples) != 1 || examples[0] != "test-label" {
+		t.Errorf("expected examples [test-label], got %v", label["examples"])
+	}
+	if _, ok := label["example"]; ok {
+		t.Errorf("schema-level example is deprecated in OpenAPI 3.1, got %v", label)
 	}
 }
 
@@ -1597,8 +1604,9 @@ func TestOptionalPathParam(t *testing.T) {
 	result := runGenerate(t, p, "", "", "")
 	paths := result["paths"].(map[string]interface{})
 	param := paths["/item/{id}"].(map[string]interface{})["get"].(map[string]interface{})["parameters"].([]interface{})[0].(map[string]interface{})
-	if param["required"] != false {
-		t.Errorf("expected optional path param to have required=false, got %v", param["required"])
+	// OAS 3.1.2: a path parameter MUST be required, even if tagged optional
+	if param["required"] != true {
+		t.Errorf("expected path param to have required=true, got %v", param["required"])
 	}
 }
 
@@ -1974,5 +1982,100 @@ func TestGetRequestSchemaPruned(t *testing.T) {
 		if _, ok := schemas[name]; !ok {
 			t.Errorf("expected referenced schema %s to be kept", name)
 		}
+	}
+}
+
+func TestRangeAndTypedEnumOptions(t *testing.T) {
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{
+				defineStruct("RangeReq",
+					member("Page", primitiveType("int"), `json:"page,range=[0:100]"`, ""),
+					member("Ratio", primitiveType("float64"), `json:"ratio,range=(0:1]"`, ""),
+					member("Kind", primitiveType("int"), `json:"kind,options=1|2|3"`, ""),
+					member("Mode", primitiveType("*string"), `json:"mode,options=a|b"`, ""),
+				),
+			},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{{Routes: []spec.Route{{
+					Method:      "post",
+					Path:        "/range",
+					Handler:     "range",
+					RequestType: defineStruct("RangeReq", member("Page", primitiveType("int"), `json:"page"`, "")),
+				}}}},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	props := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})["RangeReq"].(map[string]interface{})["properties"].(map[string]interface{})
+
+	page := props["page"].(map[string]interface{})
+	if page["minimum"] != 0 || page["maximum"] != 100 {
+		t.Errorf("expected minimum 0 and maximum 100, got %v", page)
+	}
+	ratio := props["ratio"].(map[string]interface{})
+	if ratio["exclusiveMinimum"] != 0 || ratio["maximum"] != 1 || ratio["minimum"] != nil {
+		t.Errorf("expected numeric exclusiveMinimum 0 and maximum 1, got %v", ratio)
+	}
+	kind := props["kind"].(map[string]interface{})["enum"].([]interface{})
+	if len(kind) != 3 || kind[0] != 1 || kind[2] != 3 {
+		t.Errorf("expected integer enum [1 2 3], got %v", kind)
+	}
+	mode := props["mode"].(map[string]interface{})["enum"].([]interface{})
+	if len(mode) != 3 || mode[0] != "a" || mode[2] != nil {
+		t.Errorf("expected nullable enum [a b null], got %v", mode)
+	}
+}
+
+func TestReservedHeaderParamsIgnored(t *testing.T) {
+	req := defineStruct("HeaderReq",
+		member("Auth", primitiveType("string"), `header:"Authorization"`, ""),
+		member("Trace", primitiveType("string"), `header:"X-Trace-Id"`, ""),
+	)
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{req},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{{Routes: []spec.Route{{
+					Method: "get", Path: "/h", Handler: "h", RequestType: req,
+				}}}},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	params := result["paths"].(map[string]interface{})["/h"].(map[string]interface{})["get"].(map[string]interface{})["parameters"].([]interface{})
+	if len(params) != 1 || params[0].(map[string]interface{})["name"] != "X-Trace-Id" {
+		t.Errorf("expected only X-Trace-Id header parameter, got %v", params)
+	}
+}
+
+func TestEmbeddedHeaderParamsAndTrimmedComments(t *testing.T) {
+	base := defineStruct("Base", member("TraceId", primitiveType("string"), `header:"X-Trace-Id,optional"`, ""))
+	embedded := spec.Member{Type: base}
+	req := defineStruct("CreateReq", embedded, member("Name", primitiveType("string"), `json:"name"`, "// display name"))
+	p := &plugin.Plugin{
+		Api: &spec.ApiSpec{
+			Types: []spec.Type{base, req},
+			Service: spec.Service{
+				Name: "test-api",
+				Groups: []spec.Group{{Routes: []spec.Route{{
+					Method: "post", Path: "/c", Handler: "c", RequestType: req,
+				}}}},
+			},
+		},
+	}
+
+	result := runGenerate(t, p, "", "", "")
+	params, _ := result["paths"].(map[string]interface{})["/c"].(map[string]interface{})["post"].(map[string]interface{})["parameters"].([]interface{})
+	if len(params) != 1 || params[0].(map[string]interface{})["name"] != "X-Trace-Id" || params[0].(map[string]interface{})["in"] != "header" {
+		t.Errorf("expected embedded X-Trace-Id header parameter, got %v", params)
+	}
+	name := result["components"].(map[string]interface{})["schemas"].(map[string]interface{})["CreateReq"].(map[string]interface{})["properties"].(map[string]interface{})["name"].(map[string]interface{})
+	if name["description"] != "display name" {
+		t.Errorf("expected trimmed description 'display name', got %q", name["description"])
 	}
 }
