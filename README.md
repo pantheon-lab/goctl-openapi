@@ -1,6 +1,6 @@
 # goctl-openapi
 
-A plugin for [goctl](https://github.com/zeromicro/go-zero/tree/master/tools/goctl) to generate OpenAPI 3.1.0 YAML documentation from go-zero `.api` files.
+A plugin for [goctl](https://github.com/zeromicro/go-zero/tree/master/tools/goctl) to generate OpenAPI [3.1.2](https://spec.openapis.org/oas/v3.1.2.html) YAML documentation from go-zero `.api` files.
 
 ### 1. Install
 

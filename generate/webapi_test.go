@@ -273,8 +273,8 @@ func TestWebAPIPatterns(t *testing.T) {
 
 	// 1. Verify root fields
 	openapi, _ := result["openapi"].(string)
-	if openapi != "3.1.0" {
-		t.Errorf("expected openapi 3.1.0, got %v", openapi)
+	if openapi != "3.1.2" {
+		t.Errorf("expected openapi 3.1.2, got %v", openapi)
 	}
 
 	info, _ := result["info"].(map[string]interface{})
