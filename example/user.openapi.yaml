@@ -18,6 +18,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserInfoReply'
+        "400":
+          description: Error code list
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                "100101": out of authority
+                "100102": user not exist
+        "500":
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       parameters:
         - name: id
           in: path
