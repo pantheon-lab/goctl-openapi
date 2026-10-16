@@ -3496,7 +3496,7 @@ components:
             $ref: '#/components/schemas/KfcMemberApiResponseData'
         datatype:
           type: string
-          description: ' 1:外帶 2:外送'
+          description: 1:外帶 2:外送
         imageurl:
           type: string
         orderid:
@@ -3983,7 +3983,7 @@ components:
           type: string
         data:
           type: object
-          description: ' key is line-station code e.g. ''EAL-SHT'''
+          description: key is line-station code e.g. 'EAL-SHT'
         message:
           type: string
         resultCode:
@@ -5320,12 +5320,12 @@ components:
       properties:
         details:
           type: object
-          description: ' from profile table'
+          description: from profile table
         is_active:
           type: boolean
         name:
           type: string
-          description: ' from profile table'
+          description: from profile table
         permission:
           type: string
         profile_id:
