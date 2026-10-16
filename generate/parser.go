@@ -159,7 +159,8 @@ func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes strin
 
 	requestResponseRefs := refMap{}
 	paramOnlyTypes := map[string]bool{}
-	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, o.Paths, requestResponseRefs, paramOnlyTypes, &o.Components)
+	methodDocs := routeMethodDocs(p.ApiFilePath)
+	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, o.Paths, requestResponseRefs, paramOnlyTypes, &o.Components, methodDocs)
 
 	renderReplyAsDefinition(o.Components.Schemas, p.Api.Types, requestResponseRefs)
 	pruneUnreferencedSchemas(o.Components.Schemas, requestResponseRefs, paramOnlyTypes)
@@ -185,7 +186,7 @@ func buildServerURL(schemes []string, host, basePath string) string {
 	return url
 }
 
-func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openapiPathsObject, requestResponseRefs refMap, paramOnlyTypes map[string]bool, components *openapiComponentsObject) {
+func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openapiPathsObject, requestResponseRefs refMap, paramOnlyTypes map[string]bool, components *openapiComponentsObject, methodDocs map[string][]string) {
 	// Pass 1: count request type usage for shared requestBody dedup
 	requestTypeCount := map[string]int{}
 	for _, group := range groups {
@@ -360,23 +361,30 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 			}
 
 			// Process @respdoc- annotations
-			for _, v := range route.Doc {
+			for _, v := range routeDocs(route, methodDocs) {
 				markerIndex := strings.Index(v, atRespDoc)
 				if markerIndex >= 0 {
-					l := strings.Index(v, "(")
-					r := strings.Index(v, ")")
+					l := strings.Index(v[markerIndex:], "(") + markerIndex
+					r := strings.Index(v[l+1:], ")") + l + 1
+					if l < markerIndex || r <= l {
+						continue // malformed: no (...) after the marker
+					}
 					code := strings.TrimSpace(v[markerIndex+len(atRespDoc) : l])
 					var comment string
-					commentIndex := strings.Index(v, "//")
-					if commentIndex > 0 {
-						comment = strings.TrimSpace(strings.Trim(v[commentIndex+2:], "*/"))
+					// the description follows the (...), so a leading `//` comment
+					// marker isn't mistaken for it
+					if commentIndex := strings.Index(v[r:], "//"); commentIndex >= 0 {
+						comment = strings.TrimSpace(strings.Trim(v[r+commentIndex+2:], "*/"))
 					}
 					content := strings.TrimSpace(v[l+1 : r])
-					if strings.Index(v, ":") > 0 {
+					if strings.Contains(content, ":") {
 						lines := strings.Split(content, "\n")
 						kv := make(map[string]string, len(lines))
 						for _, line := range lines {
 							sep := strings.Index(line, ":")
+							if sep < 0 {
+								continue
+							}
 							key := strings.TrimSpace(line[:sep])
 							value := strings.TrimSpace(line[sep+1:])
 							kv[key] = value
