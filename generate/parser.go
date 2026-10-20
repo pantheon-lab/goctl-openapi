@@ -19,6 +19,10 @@ import (
 
 var strColon = []byte(":")
 
+// openapiVersion is the OpenAPI Specification version the output conforms to,
+// see https://spec.openapis.org/oas/v3.1.2.html
+const openapiVersion = "3.1.2"
+
 const (
 	jsonTagKey      = "json"
 	defaultOption   = "default"
@@ -33,27 +37,60 @@ const (
 	atRespDoc       = "@respdoc-"
 )
 
-func parseRangeOption(option string) (float64, float64, bool) {
-	const str = "\\[([+-]?\\d+(\\.\\d+)?):([+-]?\\d+(\\.\\d+)?)\\]"
-	result := regexp.MustCompile(str).FindStringSubmatch(option)
-	if len(result) != 5 {
-		return 0, 0, false
-	}
+var rangeRegexp = regexp.MustCompile(`^([\[(])\s*([+-]?\d+(?:\.\d+)?)?\s*:\s*([+-]?\d+(?:\.\d+)?)?\s*([\])])$`)
 
-	min, err := strconv.ParseFloat(result[1], 64)
-	if err != nil {
-		return 0, 0, false
+// applyRangeOption renders go-zero's range option, e.g. [1:10] or (0:100], as
+// JSON Schema bounds. A parenthesis marks an exclusive bound, which OAS 3.1
+// (JSON Schema 2020-12) expresses as a numeric exclusiveMinimum/exclusiveMaximum
+// rather than a boolean modifier. Either bound may be omitted.
+func applyRangeOption(schema *openapiSchemaObject, option string) {
+	result := rangeRegexp.FindStringSubmatch(strings.TrimSpace(option))
+	if result == nil {
+		return
 	}
+	var bounds [2]*float64
+	for i, s := range []string{result[2], result[3]} {
+		if s == "" {
+			continue
+		}
+		v, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return
+		}
+		bounds[i] = &v
+	}
+	min, max := bounds[0], bounds[1]
+	if min != nil && max != nil && *max < *min {
+		max = min
+	}
+	if min != nil {
+		if result[1] == "(" {
+			schema.ExclusiveMinimum = min
+		} else {
+			schema.Minimum = min
+		}
+	}
+	if max != nil {
+		if result[4] == ")" {
+			schema.ExclusiveMaximum = max
+		} else {
+			schema.Maximum = max
+		}
+	}
+}
 
-	max, err := strconv.ParseFloat(result[3], 64)
-	if err != nil {
-		return 0, 0, false
+// enumValues types go-zero's options=a|b|c values to match the schema, since
+// JSON Schema enum compares by JSON value: "1" never matches an integer 1.
+// A nullable schema must also list null for null to stay a valid value.
+func enumValues(option string, schema *openapiSchemaObject) []interface{} {
+	var values []interface{}
+	for _, v := range strings.Split(option, optionSeparator) {
+		values = append(values, typedValue(v, schema.Type))
 	}
-
-	if max < min {
-		return min, min, true
+	if schema.Nullable {
+		values = append(values, nil)
 	}
-	return min, max, true
+	return values
 }
 
 func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes string) (*openapiObject, error) {
@@ -71,7 +108,7 @@ func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes strin
 	}
 
 	o := openapiObject{
-		OpenAPI: "3.1.0",
+		OpenAPI: openapiVersion,
 		Paths:   make(openapiPathsObject),
 		Components: openapiComponentsObject{
 			Schemas: make(openapiSchemasObject),
@@ -122,7 +159,8 @@ func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes strin
 
 	requestResponseRefs := refMap{}
 	paramOnlyTypes := map[string]bool{}
-	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, o.Paths, requestResponseRefs, paramOnlyTypes, &o.Components)
+	methodDocs := routeMethodDocs(p.ApiFilePath)
+	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, o.Paths, requestResponseRefs, paramOnlyTypes, &o.Components, methodDocs)
 
 	renderReplyAsDefinition(o.Components.Schemas, p.Api.Types, requestResponseRefs)
 	pruneUnreferencedSchemas(o.Components.Schemas, requestResponseRefs, paramOnlyTypes)
@@ -148,7 +186,7 @@ func buildServerURL(schemes []string, host, basePath string) string {
 	return url
 }
 
-func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openapiPathsObject, requestResponseRefs refMap, paramOnlyTypes map[string]bool, components *openapiComponentsObject) {
+func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openapiPathsObject, requestResponseRefs refMap, paramOnlyTypes map[string]bool, components *openapiComponentsObject, methodDocs map[string][]string) {
 	// Pass 1: count request type usage for shared requestBody dedup
 	requestTypeCount := map[string]int{}
 	for _, group := range groups {
@@ -184,18 +222,15 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 							},
 						}
 
-						// Look up type and optional from request struct member
+						// Look up the type from the request struct member. A path
+						// parameter is always required: OAS 3.1.2 mandates
+						// `required: true` for `in: path`, even if tagged optional.
 						if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
 							for _, member := range defineStruct.Members {
 								memberKey := ""
 								for _, tag := range member.Tags() {
 									if tag.Key == "path" {
 										memberKey = tag.Name
-										for _, option := range tag.Options {
-											if option == optionalOption || option == omitemptyOption {
-												spo.Required = false
-											}
-										}
 									}
 								}
 								if memberKey == key {
@@ -218,7 +253,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 			hasBody := false
 			if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
 				for _, member := range defineStruct.Members {
-					if hasHeaderParameters(member) {
+					if hasHeaderParameters(member) || isEmbeddedStruct(member) {
 						parameters = parseHeader(member, parameters)
 					}
 				}
@@ -229,6 +264,10 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						}
 						if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
 							for _, m := range embedStruct.Members {
+								// embedded path/header members are rendered above
+								if hasPathParameters(m) || hasHeaderParameters(m) {
+									continue
+								}
 								parameters = append(parameters, renderStruct(m))
 							}
 							continue
@@ -326,23 +365,30 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 			}
 
 			// Process @respdoc- annotations
-			for _, v := range route.Doc {
+			for _, v := range routeDocs(route, methodDocs) {
 				markerIndex := strings.Index(v, atRespDoc)
 				if markerIndex >= 0 {
-					l := strings.Index(v, "(")
-					r := strings.Index(v, ")")
+					l := strings.Index(v[markerIndex:], "(") + markerIndex
+					r := strings.Index(v[l+1:], ")") + l + 1
+					if l < markerIndex || r <= l {
+						continue // malformed: no (...) after the marker
+					}
 					code := strings.TrimSpace(v[markerIndex+len(atRespDoc) : l])
 					var comment string
-					commentIndex := strings.Index(v, "//")
-					if commentIndex > 0 {
-						comment = strings.TrimSpace(strings.Trim(v[commentIndex+2:], "*/"))
+					// the description follows the (...), so a leading `//` comment
+					// marker isn't mistaken for it
+					if commentIndex := strings.Index(v[r:], "//"); commentIndex >= 0 {
+						comment = strings.TrimSpace(strings.Trim(v[r+commentIndex+2:], "*/"))
 					}
 					content := strings.TrimSpace(v[l+1 : r])
-					if strings.Index(v, ":") > 0 {
+					if strings.Contains(content, ":") {
 						lines := strings.Split(content, "\n")
 						kv := make(map[string]string, len(lines))
 						for _, line := range lines {
 							sep := strings.Index(line, ":")
+							if sep < 0 {
+								continue
+							}
 							key := strings.TrimSpace(line[:sep])
 							value := strings.TrimSpace(line[sep+1:])
 							kv[key] = value
@@ -351,13 +397,18 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						if err != nil {
 							continue
 						}
+						// a 3.1 Media Type Object example, rather than the deprecated
+						// Schema Object `example`
+						var example interface{}
+						if err := json.Unmarshal(kvByte, &example); err != nil {
+							continue
+						}
 						operationObject.Responses[code] = openapiResponseObject{
-							Description: comment,
+							Description: responseDescription(code, comment),
 							Content: map[string]openapiMediaTypeObject{
 								"application/json": {
-									Schema: &openapiSchemaObject{
-										Example: string(kvByte),
-									},
+									Schema:  &openapiSchemaObject{Type: "object"},
+									Example: example,
 								},
 							},
 						}
@@ -365,7 +416,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 						schema := schemaOfTypeName(content)
 						markSchemaRefs(requestResponseRefs, schema)
 						operationObject.Responses[code] = openapiResponseObject{
-							Description: comment,
+							Description: responseDescription(code, comment),
 							Content: map[string]openapiMediaTypeObject{
 								"application/json": {Schema: &schema},
 							},
@@ -410,6 +461,18 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths openap
 			paths[path] = pathItemObject
 		}
 	}
+}
+
+// responseDescription returns a non-empty Response Object description, which
+// OAS 3.1.2 requires, falling back to the status text of the code.
+func responseDescription(code, comment string) string {
+	if comment != "" {
+		return comment
+	}
+	if n, err := strconv.Atoi(code); err == nil && http.StatusText(n) != "" {
+		return http.StatusText(n)
+	}
+	return "Response " + code
 }
 
 // markSchemaRefs records the components schema a (possibly array) schema
@@ -599,18 +662,14 @@ func renderStruct(member spec.Member) openapiParameterObject {
 			if strings.HasPrefix(option, optionsOption) {
 				segs := strings.SplitN(option, equalToken, 2)
 				if len(segs) == 2 {
-					schema.Enum = strings.Split(segs[1], optionSeparator)
+					schema.Enum = enumValues(segs[1], schema)
 				}
 			}
 
 			if strings.HasPrefix(option, rangeOption) {
 				segs := strings.SplitN(option, equalToken, 2)
 				if len(segs) == 2 {
-					min, max, ok := parseRangeOption(segs[1])
-					if ok {
-						schema.Minimum = min
-						schema.Maximum = max
-					}
+					applyRangeOption(schema, segs[1])
 				}
 			}
 
@@ -636,7 +695,7 @@ func renderStruct(member spec.Member) openapiParameterObject {
 	}
 
 	if len(member.Comment) > 0 {
-		sp.Description = strings.TrimLeft(member.Comment, "//")
+		sp.Description = commentText(member.Comment)
 	}
 
 	return sp
@@ -757,6 +816,19 @@ func hasJSONBodyMember(s spec.DefineStruct) bool {
 	return false
 }
 
+// isEmbeddedStruct reports whether a member is an embedded struct, whose
+// members belong to the enclosing struct.
+func isEmbeddedStruct(m spec.Member) bool {
+	_, ok := m.Type.(spec.DefineStruct)
+	return ok && (m.IsInline || m.Name == "" || len(m.Tags()) == 0)
+}
+
+// commentText strips the // markers and surrounding whitespace from a field
+// comment, so `Name string // display name` describes it as "display name".
+func commentText(comment string) string {
+	return strings.TrimSpace(strings.ReplaceAll(comment, "//", ""))
+}
+
 func hasPathParameters(member spec.Member) bool {
 	for _, tag := range member.Tags() {
 		if tag.Key == "path" {
@@ -822,7 +894,7 @@ func schemaOfField(member spec.Member) openapiSchemaObject {
 	schema := schemaOfTypeName(member.Type.Name())
 
 	comment := member.GetComment()
-	comment = strings.Replace(comment, "//", "", -1)
+	comment = commentText(comment)
 	if comment != "" {
 		schema.Description = comment
 	}
@@ -841,21 +913,17 @@ func schemaOfField(member spec.Member) openapiSchemaObject {
 			case strings.HasPrefix(option, optionsOption):
 				segs := strings.SplitN(option, equalToken, 2)
 				if len(segs) == 2 {
-					schema.Enum = strings.Split(segs[1], optionSeparator)
+					schema.Enum = enumValues(segs[1], &schema)
 				}
 			case strings.HasPrefix(option, rangeOption):
 				segs := strings.SplitN(option, equalToken, 2)
 				if len(segs) == 2 {
-					min, max, ok := parseRangeOption(segs[1])
-					if ok {
-						schema.Minimum = min
-						schema.Maximum = max
-					}
+					applyRangeOption(&schema, segs[1])
 				}
 			case strings.HasPrefix(option, exampleOption):
 				segs := strings.Split(option, equalToken)
 				if len(segs) == 2 {
-					schema.Example = typedValue(segs[1], schema.Type)
+					schema.Examples = []interface{}{typedValue(segs[1], schema.Type)}
 				}
 			}
 			if option == stringOption {
@@ -1032,6 +1100,18 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 		schema.Type = tempKind.String()
 	}
 
+	if isEmbeddedStruct(m) {
+		// an embedded struct contributes its own header members, not itself
+		if memberDefineStruct, ok := m.Type.(spec.DefineStruct); ok {
+			for _, cm := range memberDefineStruct.Members {
+				if hasHeaderParameters(cm) {
+					parameters = parseHeader(cm, parameters)
+				}
+			}
+			return parameters
+		}
+	}
+
 	sp := openapiParameterObject{In: "header", Schema: schema}
 
 	for _, tag := range m.Tags() {
@@ -1045,18 +1125,14 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 			if strings.HasPrefix(option, optionsOption) {
 				segs := strings.SplitN(option, equalToken, 2)
 				if len(segs) == 2 {
-					schema.Enum = strings.Split(segs[1], optionSeparator)
+					schema.Enum = enumValues(segs[1], schema)
 				}
 			}
 
 			if strings.HasPrefix(option, rangeOption) {
 				segs := strings.SplitN(option, equalToken, 2)
 				if len(segs) == 2 {
-					min, max, ok := parseRangeOption(segs[1])
-					if ok {
-						schema.Minimum = min
-						schema.Maximum = max
-					}
+					applyRangeOption(schema, segs[1])
 				}
 			}
 
@@ -1080,17 +1156,12 @@ func parseHeader(m spec.Member, parameters openapiParametersObject) openapiParam
 			}
 		}
 	}
-	sp.Description = strings.TrimLeft(m.Comment, "//")
-	if m.Name == "" {
-		memberDefineStruct, ok := m.Type.(spec.DefineStruct)
-		if !ok {
-			return parameters
-		}
-		for _, cm := range memberDefineStruct.Members {
-			if hasHeaderParameters(cm) {
-				parameters = parseHeader(cm, parameters)
-			}
-		}
+	sp.Description = commentText(m.Comment)
+	// OAS 3.1.2: a header parameter named Accept, Content-Type or Authorization
+	// SHALL be ignored; those are described by content types and securitySchemes.
+	switch http.CanonicalHeaderKey(sp.Name) {
+	case "", "Accept", "Content-Type", "Authorization":
+		return parameters
 	}
 	return append(parameters, sp)
 }
