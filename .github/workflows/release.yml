@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - "v*"
+  # called by auto-version.yml: a tag pushed with GITHUB_TOKEN doesn't
+  # trigger the push event above
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag to release
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -15,6 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: actions/setup-go@v5
         with:
